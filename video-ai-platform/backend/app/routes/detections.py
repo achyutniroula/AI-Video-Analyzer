@@ -1,5 +1,5 @@
 """
-Detection API Routes
+Detection API Routes - WITH S3 DETECTIONS + AUDIO ANALYSIS
 """
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
@@ -10,9 +10,17 @@ from app.models.detection import (
 )
 from app.utils.cognito import get_current_user
 from app.utils.db_handler import DBHandler
+import boto3
+import json
+import os
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 db = DBHandler()
+
+# AWS Config
+S3_BUCKET = os.getenv('S3_BUCKET_NAME', 'video-ai-uploads')
+AWS_REGION = os.getenv('AWS_REGION', 'us-east-2')
+s3_client = boto3.client('s3', region_name=AWS_REGION)
 
 @router.get("/", response_model=VideoListResponse)
 async def list_user_videos(
@@ -74,6 +82,81 @@ async def get_video_details(
     
     return video
 
+@router.get("/{video_id}/detections")
+async def get_video_detections(
+    video_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get full detections + audio analysis for a video (from S3)
+    
+    This endpoint fetches the complete detection list AND audio analysis from S3
+    while the main video endpoint only returns summary from DynamoDB
+    
+    Returns:
+        - Full detection list from S3
+        - Audio analysis from S3
+        - Summary and metadata from DynamoDB
+    """
+    # Get metadata from DynamoDB
+    video = db.get_video_by_id(video_id)
+    
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    if video.get('user_id') != current_user['user_id']:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # ✅ FIX: Fetch full detections + audio_analysis from S3
+    s3_key = f"results/{video_id}/detections.json"
+    
+    detections = []
+    audio_analysis = None
+    
+    try:
+        print(f"Fetching detections from S3: {s3_key}")
+        s3_response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
+        detections_data = json.loads(s3_response['Body'].read())
+        
+        # Get detections
+        detections = detections_data.get('detections', [])
+        print(f"✓ Loaded {len(detections)} detections from S3")
+        
+        # ✅ NEW: Get audio_analysis from S3
+        audio_analysis = detections_data.get('audio_analysis')
+        if audio_analysis:
+            print(f"✓ Loaded audio analysis from S3:")
+            print(f"  - Whisper segments: {len(audio_analysis.get('transcript', {}).get('segments', []))}")
+            print(f"  - Wav2Vec2 classifications: {len(audio_analysis.get('wav2vec2_classifications', []))}")
+            print(f"  - Audio events: {len(audio_analysis.get('audio_events', []))}")
+            print(f"  - Fused moments: {len(audio_analysis.get('fused_data', {}).get('timeline', []))}")
+        else:
+            print("  No audio_analysis in S3 data")
+            # Fallback to DynamoDB
+            audio_analysis = video.get('audio_analysis')
+            if audio_analysis:
+                print("  ✓ Found audio_analysis in DynamoDB (fallback)")
+                
+    except Exception as e:
+        print(f"✗ Error fetching detections from S3: {e}")
+        # Fallback: try to get from DynamoDB (old videos)
+        detections = video.get('detections', [])
+        audio_analysis = video.get('audio_analysis')
+        print(f"  Fallback: Got {len(detections)} detections from DynamoDB")
+    
+    return {
+        "video_id": video_id,
+        "status": video.get('status'),
+        "total_detections": len(detections),
+        "detections": detections,
+        "audio_analysis": audio_analysis,  # ✅ NOW FROM S3!
+        "summary": video.get('summary', {}),
+        "metadata": video.get('metadata', {}),
+        "scenes": video.get('scenes', []),
+        "scene_composition": video.get('scene_composition', {}),
+        "lighting_analysis": video.get('lighting_analysis', {}),
+    }
+
 @router.get("/{video_id}/status")
 async def get_video_status(
     video_id: str,
@@ -103,7 +186,7 @@ async def get_video_status(
         "status": video['status'],
         "updated_at": video.get('updated_at'),
         "error_message": video.get('error_message'),
-        "total_detections": video.get('total_detections', 0)
+        "total_detections": video.get('summary', {}).get('total_detections', 0)
     }
 
 @router.delete("/{video_id}")

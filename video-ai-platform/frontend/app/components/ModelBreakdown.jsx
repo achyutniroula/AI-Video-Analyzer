@@ -1,16 +1,18 @@
 /**
- * Complete ModelBreakdown Component - FIXED VERSION
- * Tracks all 12 AI models in the detection stack
+ * Complete ModelBreakdown Component - WITH AUDIO ANALYSIS
+ * Tracks all 14 AI models in the detection stack
  */
 
 'use client';
 
-export default function ModelBreakdown({ detections, video }) {
+export default function ModelBreakdown({ detections, video, audio_analysis }) {
   // Debug: Log to see what we're getting
   console.log('ModelBreakdown received:', { 
     detectionsCount: detections?.length, 
     firstDetection: detections?.[0],
-    hasModelSource: detections?.[0]?.model_source 
+    hasModelSource: detections?.[0]?.model_source,
+    hasAudio: !!audio_analysis,
+    audioKeys: audio_analysis ? Object.keys(audio_analysis) : []
   });
 
   if (!detections || detections.length === 0) {
@@ -21,15 +23,15 @@ export default function ModelBreakdown({ detections, video }) {
     );
   }
 
-  // ALL 12 MODEL CONFIGURATIONS
+  // ALL 14 MODEL CONFIGURATIONS (Visual + Audio)
   const MODEL_CONFIG = {
     // VISUAL MODELS
-    'ensemble': {
-      name: 'Ensemble (YOLOv11x+10x+9c)',
+    'ensemble_wbf': {
+      name: 'Ensemble WBF',
       category: 'Visual Detection',
       icon: '🎯',
       color: 'blue',
-      description: 'Multi-model consensus detection',
+      description: 'YOLOv11x+10x+9c fused detection',
       priority: 1
     },
     'yolov11x': {
@@ -106,47 +108,13 @@ export default function ModelBreakdown({ detections, video }) {
       description: 'Object ID tracking',
       priority: 9
     },
-    
-    // AUDIO MODELS
-    'whisper': {
-      name: 'Whisper',
-      category: 'Audio Analysis',
-      icon: '🎤',
-      color: 'indigo',
-      description: 'Speech transcription (99 languages)',
-      priority: 10
-    },
-    'wav2vec2': {
-      name: 'Wav2Vec2',
-      category: 'Audio Analysis',
-      icon: '🔊',
-      color: 'fuchsia',
-      description: 'Sound classification',
-      priority: 11
-    },
-    'audio_events': {
-      name: 'Audio Events',
-      category: 'Audio Analysis',
-      icon: '⚡',
-      color: 'rose',
-      description: 'Event detection (gunshots, alarms)',
-      priority: 12
-    },
-    'audio_visual_fusion': {
-      name: 'Audio-Visual Fusion',
-      category: 'Multimodal',
-      icon: '🔗',
-      color: 'amber',
-      description: 'Combined timeline events',
-      priority: 13
-    },
   };
 
-  // Calculate statistics for each model
+  // Calculate statistics for each visual model
   const getModelStats = () => {
     const stats = {};
     
-    // Initialize all models
+    // Initialize all visual models
     Object.keys(MODEL_CONFIG).forEach(model => {
       stats[model] = {
         count: 0,
@@ -158,20 +126,9 @@ export default function ModelBreakdown({ detections, video }) {
 
     // Count detections per model
     detections.forEach((det, index) => {
-      // Get model_source - handle both direct property and nested
-      const model = String(det.model_source || det.model?.source || 'unknown').toLowerCase().trim();
-      const className = String(det.class_name || det.class?.name || 'unknown');
+      const model = String(det.model_source || 'unknown').toLowerCase().trim();
+      const className = String(det.class_name || 'unknown');
       const confidence = parseFloat(det.confidence) || 0;
-
-      if (index < 3) {
-        console.log('Processing detection:', { 
-          model, 
-          className, 
-          confidence,
-          raw_model_source: det.model_source,
-          detection_keys: Object.keys(det)
-        });
-      }
 
       if (stats[model]) {
         stats[model].count++;
@@ -192,9 +149,6 @@ export default function ModelBreakdown({ detections, video }) {
           };
         }
         stats['unknown'].count++;
-        if (index < 3) {
-          console.warn('Unknown model source:', model, 'Available models:', Object.keys(MODEL_CONFIG));
-        }
       }
     });
 
@@ -205,7 +159,6 @@ export default function ModelBreakdown({ detections, video }) {
       }
     });
 
-    console.log('Final stats:', stats);
     return stats;
   };
 
@@ -213,15 +166,13 @@ export default function ModelBreakdown({ detections, video }) {
   const totalDetections = detections.length;
   const activeModels = Object.keys(stats).filter(k => stats[k].count > 0 && k !== 'unknown').length;
 
-  // Group models by category
+  // Group visual models by category
   const categories = {
     'Visual Detection': [],
     'Ensemble': [],
     'Segmentation': [],
     'Scene Understanding': [],
-    'Motion Tracking': [],
-    'Audio Analysis': [],
-    'Multimodal': []
+    'Motion Tracking': []
   };
 
   Object.entries(MODEL_CONFIG).forEach(([key, config]) => {
@@ -247,7 +198,7 @@ export default function ModelBreakdown({ detections, video }) {
         🔬 Complete Detection Stack Analysis
       </h2>
       <p className="text-gray-600 mb-6">
-        Detailed breakdown of all {Object.keys(MODEL_CONFIG).length} AI models in the detection pipeline
+        Visual + Audio analysis from 14 AI models
       </p>
 
       {/* Summary Stats */}
@@ -259,13 +210,13 @@ export default function ModelBreakdown({ detections, video }) {
           </div>
           <div className="text-center">
             <p className="text-3xl font-bold text-green-600">{activeModels}</p>
-            <p className="text-xs text-gray-600">Active Models</p>
+            <p className="text-xs text-gray-600">Active Visual Models</p>
           </div>
           <div className="text-center">
             <p className="text-3xl font-bold text-purple-600">
-              {Object.keys(categories).length}
+              {audio_analysis ? '4' : '0'}
             </p>
-            <p className="text-xs text-gray-600">Categories Used</p>
+            <p className="text-xs text-gray-600">Audio Models</p>
           </div>
           <div className="text-center">
             <p className="text-3xl font-bold text-indigo-600">
@@ -276,25 +227,7 @@ export default function ModelBreakdown({ detections, video }) {
         </div>
       </div>
 
-      {/* Show warning if no active models detected */}
-      {activeModels === 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <h4 className="font-semibold text-red-800 mb-2">⚠️ No Model Attribution Found</h4>
-          <p className="text-sm text-red-700 mb-2">
-            This video was processed before model attribution was implemented.
-          </p>
-          <p className="text-xs text-red-600">
-            Upload a new video to see the complete model breakdown.
-          </p>
-          {stats['unknown'] && stats['unknown'].count > 0 && (
-            <p className="text-xs text-red-600 mt-2">
-              ({stats['unknown'].count} detections have unknown model source)
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Models by Category */}
+      {/* Visual Models by Category */}
       {Object.entries(categories).map(([category, models]) => (
         <div key={category} className="mb-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center border-b pb-2">
@@ -304,8 +237,6 @@ export default function ModelBreakdown({ detections, video }) {
               {category === 'Segmentation' && '✂️'}
               {category === 'Scene Understanding' && '🖼️'}
               {category === 'Motion Tracking' && '🌊'}
-              {category === 'Audio Analysis' && '🎤'}
-              {category === 'Multimodal' && '🔗'}
             </span>
             {category}
           </h3>
@@ -322,7 +253,6 @@ export default function ModelBreakdown({ detections, video }) {
                   key={key}
                   className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 hover:shadow-md transition"
                 >
-                  {/* Header */}
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-2xl">{config.icon}</span>
                     <span className="text-sm font-semibold text-blue-700 bg-blue-100 px-2 py-1 rounded">
@@ -330,7 +260,6 @@ export default function ModelBreakdown({ detections, video }) {
                     </span>
                   </div>
 
-                  {/* Model Name */}
                   <h4 className="font-bold text-gray-800 mb-1">
                     {config.name}
                   </h4>
@@ -338,7 +267,6 @@ export default function ModelBreakdown({ detections, video }) {
                     {config.description}
                   </p>
 
-                  {/* Stats */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Detections:</span>
@@ -354,7 +282,6 @@ export default function ModelBreakdown({ detections, video }) {
                     </div>
                   </div>
 
-                  {/* Top Objects */}
                   {topObjects.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <p className="text-xs text-gray-600 mb-1">Top detections:</p>
@@ -377,12 +304,126 @@ export default function ModelBreakdown({ detections, video }) {
         </div>
       ))}
 
+      {/* ✅ NEW: Audio Analysis Section */}
+      {audio_analysis && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center border-b pb-2">
+            <span className="mr-2">🎤</span>
+            Audio Analysis
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Whisper */}
+            {audio_analysis.transcript && (
+              <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">🎤</span>
+                  <span className="text-xs font-semibold text-indigo-700 bg-indigo-100 px-2 py-1 rounded">
+                    Active
+                  </span>
+                </div>
+                <h4 className="font-bold text-gray-800 mb-1">Whisper</h4>
+                <p className="text-xs text-gray-600 mb-3">
+                  Speech transcription (99 languages)
+                </p>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Segments:</span>
+                    <span className="font-semibold text-gray-800">
+                      {audio_analysis.transcript.segments?.length || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Words:</span>
+                    <span className="font-semibold text-gray-800">
+                      {audio_analysis.transcript.text?.split(' ').length || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Wav2Vec2 */}
+            {audio_analysis.wav2vec2_classifications && (
+              <div className="bg-fuchsia-50 border-2 border-fuchsia-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">🔊</span>
+                  <span className="text-xs font-semibold text-fuchsia-700 bg-fuchsia-100 px-2 py-1 rounded">
+                    Active
+                  </span>
+                </div>
+                <h4 className="font-bold text-gray-800 mb-1">Wav2Vec2</h4>
+                <p className="text-xs text-gray-600 mb-3">
+                  Audio feature extraction
+                </p>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Analyses:</span>
+                    <span className="font-semibold text-gray-800">
+                      {audio_analysis.wav2vec2_classifications.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Audio Events */}
+            {audio_analysis.audio_events && (
+              <div className="bg-rose-50 border-2 border-rose-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">⚡</span>
+                  <span className="text-xs font-semibold text-rose-700 bg-rose-100 px-2 py-1 rounded">
+                    Active
+                  </span>
+                </div>
+                <h4 className="font-bold text-gray-800 mb-1">Audio Events</h4>
+                <p className="text-xs text-gray-600 mb-3">
+                  Event detection (8 categories)
+                </p>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Events:</span>
+                    <span className="font-semibold text-gray-800">
+                      {audio_analysis.audio_events.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Audio-Visual Fusion */}
+            {audio_analysis.fused_data && (
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">🔗</span>
+                  <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                    Active
+                  </span>
+                </div>
+                <h4 className="font-bold text-gray-800 mb-1">Audio-Visual Fusion</h4>
+                <p className="text-xs text-gray-600 mb-3">
+                  Timeline synchronization
+                </p>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Moments:</span>
+                    <span className="font-semibold text-gray-800">
+                      {audio_analysis.fused_data.timeline?.length || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Models NOT Contributing */}
       {activeModels > 0 && Object.keys(MODEL_CONFIG).filter(k => stats[k].count === 0).length > 0 && (
         <div className="mt-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
           <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
             <span className="mr-2">⚠️</span>
-            Models Not Contributing
+            Visual Models Not Contributing
           </h4>
           <div className="flex flex-wrap gap-2">
             {Object.keys(MODEL_CONFIG)
@@ -397,7 +438,19 @@ export default function ModelBreakdown({ detections, video }) {
               ))}
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            These models are installed but didn't contribute detections to this video
+            These visual models are installed but didn't contribute detections to this video
+          </p>
+        </div>
+      )}
+
+      {/* No Audio Analysis Warning */}
+      {!audio_analysis && (
+        <div className="mt-6 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+          <h4 className="font-semibold text-yellow-800 mb-2">
+            ⚠️ No Audio Analysis Available
+          </h4>
+          <p className="text-sm text-yellow-700">
+            This video was processed without audio analysis or has no audio track.
           </p>
         </div>
       )}

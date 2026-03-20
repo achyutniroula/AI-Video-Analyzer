@@ -4,7 +4,7 @@ import ModelBreakdown from '../../components/ModelBreakdown';
 import VideoNarrative from '../../components/VideoNarrative';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
 import { getVideoDetails } from '../../lib/api';
 import Link from 'next/link';
 import DetectionCharts from '../../components/DetectionCharts';
@@ -16,6 +16,8 @@ export default function VideoDetailPage() {
   const videoId = params.video_id;
   
   const [video, setVideo] = useState(null);
+  const [detections, setDetections] = useState([]);
+  const [audioAnalysis, setAudioAnalysis] = useState(null); // ✅ NEW: Audio analysis state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [authenticated, setAuthenticated] = useState(false);
@@ -39,9 +41,9 @@ export default function VideoDetailPage() {
   function calculateSummary(detections) {
     if (!detections || detections.length === 0) {
       return {
-        total: 0,
+        total_detections: 0,
         by_class: {},
-        unique_classes: 0
+        unique_tracked_objects: 0
       };
     }
 
@@ -53,9 +55,9 @@ export default function VideoDetailPage() {
     });
 
     return {
-      total: detections.length,
+      total_detections: detections.length,
       by_class: by_class,
-      unique_classes: Object.keys(by_class).length
+      unique_tracked_objects: Object.keys(by_class).length
     };
   }
 
@@ -65,16 +67,59 @@ export default function VideoDetailPage() {
       setError(null);
       console.log('Fetching video:', videoId);
       
+      // Get auth token
+      const session = await fetchAuthSession();
+      const token = session.tokens?.idToken?.toString();
+      
+      if (!token) {
+        throw new Error('No authentication token');
+      }
+      
+      // Fetch video metadata
       const data = await getVideoDetails(videoId);
       console.log('Video data received:', data);
       console.log('Has summary?', !!data.summary);
-      console.log('Has detections?', !!data.detections, 'Count:', data.detections?.length);
       
-      // If no summary provided, calculate it from detections
-      if (!data.summary && data.detections) {
-        console.log('Summary missing, calculating from detections...');
-        data.summary = calculateSummary(data.detections);
-        console.log('Calculated summary:', data.summary);
+      // ✅ FIX: Fetch detections separately from S3
+      try {
+        console.log('Fetching detections from /detections endpoint...');
+        const detectionsRes = await fetch(
+          `http://localhost:8000/api/videos/${videoId}/detections`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (detectionsRes.ok) {
+          const detectionsData = await detectionsRes.json();
+          console.log('✅ Detections loaded:', detectionsData.total_detections);
+          console.log('First detection:', detectionsData.detections?.[0]);
+          console.log('Has model_source?', detectionsData.detections?.[0]?.model_source);
+          
+          // ✅ NEW: Check for audio_analysis
+          console.log('Has audio_analysis?', !!detectionsData.audio_analysis);
+          if (detectionsData.audio_analysis) {
+            console.log('Audio analysis keys:', Object.keys(detectionsData.audio_analysis));
+            setAudioAnalysis(detectionsData.audio_analysis);
+          }
+          
+          setDetections(detectionsData.detections || []);
+          
+          // If no summary in DynamoDB, calculate from detections
+          if (!data.summary && detectionsData.detections) {
+            console.log('Calculating summary from detections...');
+            data.summary = calculateSummary(detectionsData.detections);
+          }
+        } else {
+          console.warn('Failed to load detections:', detectionsRes.status);
+          setDetections([]);
+        }
+      } catch (detErr) {
+        console.error('Error fetching detections:', detErr);
+        setDetections([]);
       }
       
       setVideo(data);
@@ -241,11 +286,10 @@ export default function VideoDetailPage() {
           </div>
         </div>
 
-        {/* ADD THIS */}
+        {/* Video Player */}
         <VideoPlayer video={video} />
 
-
-        {/* Detection Summary Card - Now with fallback calculation */}
+        {/* Detection Summary Card */}
         {video.summary && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Detection Summary</h2>
@@ -254,15 +298,15 @@ export default function VideoDetailPage() {
               {/* Total Detections */}
               <div className="bg-blue-50 rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-blue-600">
-                  {video.summary.total || video.total_detections || 0}
+                  {video.summary.total_detections || 0}
                 </p>
                 <p className="text-sm text-gray-600 mt-1">Total Detections</p>
               </div>
 
-              {/* Unique Classes */}
+              {/* Unique Objects */}
               <div className="bg-green-50 rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-green-600">
-                  {video.summary.unique_classes || 0}
+                  {video.summary.unique_tracked_objects || 0}
                 </p>
                 <p className="text-sm text-gray-600 mt-1">Unique Objects</p>
               </div>
@@ -302,29 +346,24 @@ export default function VideoDetailPage() {
           </div>
         )}
 
-        {/* Show message if no summary and no detections */}
-        {!video.summary && (!video.detections || video.detections.length === 0) && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <p className="text-yellow-800">
-              No detection data available for this video. It may still be processing or there was an error during processing.
-            </p>
-          </div>
-        )}
-
-        {/* ADD THIS NEW SECTION */}
+        {/* Detection Charts */}
         <DetectionCharts video={video} />
+
+        {/* ✅ FIXED: Pass audio_analysis to ModelBreakdown */}
+        <ModelBreakdown 
+          detections={detections} 
+          video={video}
+          audio_analysis={audioAnalysis}
+        />
 
         {/* AI Video Narrative */}
         <VideoNarrative videoId={videoId} />
 
-        {/* ADD THIS COMPONENT HERE 👇 */}
-        <ModelBreakdown detections={video.detections} video={video} />
-
-        {/* All Detections Card */}
-        {video.detections && video.detections.length > 0 && (
-          <div className="bg-white rounded-lg shadow-lg p-6">
+        {/* All Detections Table */}
+        {detections && detections.length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              All Detections ({video.detections.length})
+              All Detections ({detections.length})
             </h2>
             
             <div className="overflow-x-auto">
@@ -344,12 +383,15 @@ export default function VideoDetailPage() {
                       Confidence
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Model
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Position
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {video.detections.map((detection, index) => (
+                  {detections.slice(0, 100).map((detection, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {detection.frame}
@@ -363,6 +405,9 @@ export default function VideoDetailPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {(detection.confidence * 100).toFixed(1)}%
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                        {detection.model_source || 'N/A'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         ({detection.bbox.x1.toFixed(0)}, {detection.bbox.y1.toFixed(0)})
                       </td>
@@ -371,6 +416,12 @@ export default function VideoDetailPage() {
                 </tbody>
               </table>
             </div>
+            
+            {detections.length > 100 && (
+              <p className="text-sm text-gray-500 mt-4 text-center">
+                Showing first 100 of {detections.length} detections
+              </p>
+            )}
           </div>
         )}
 
