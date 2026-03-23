@@ -6,6 +6,7 @@ The FINAL PHASE - generates intelligent narratives using:
 - Phase 1: CLIP scenes + lighting
 - Phase 2: WBF ensemble (max objects)
 - Phase 3: Panoptic segmentation (background understanding)
+- Phase 4: Activities, spatial relationships, temporal scenes
 
 Result: Human-like narratives with complete understanding!
 """
@@ -94,6 +95,32 @@ class NarrativeIntelligenceService:
         audio_context = self._get_audio_context(audio)
         
         # ==========================================
+        # PHASE 4: SPATIAL RELATIONSHIPS
+        # ==========================================
+        spatial_rels = video_data.get('spatial_relationships', [])
+        spatial_context = self._get_spatial_context(spatial_rels) if spatial_rels else ""
+        
+        # ==========================================
+        # PHASE 4: ACTIVITY SUMMARY
+        # ==========================================
+        activity_summary = video_data.get('activity_summary', {})
+        activity_context = ""
+        if activity_summary and activity_summary.get('dominant_activity'):
+            activity_context = f"\n\nACTIVITY ANALYSIS:\n"
+            activity_context += f"Dominant activity: {activity_summary['dominant_activity']}\n"
+            activities = activity_summary.get('activities', {})
+            if activities:
+                activity_context += "Activities detected: " + ", ".join(
+                    [f"{act} ({count} frames)" for act, count in sorted(activities.items(), key=lambda x: x[1], reverse=True)[:3]]
+                ) + "\n"
+        
+        # ==========================================
+        # PHASE 4: TEMPORAL SCENES
+        # ==========================================
+        temporal_scenes = video_data.get('temporal_scenes', [])
+        scene_context_temporal = self._get_temporal_context(temporal_scenes) if temporal_scenes else ""
+        
+        # ==========================================
         # BUILD COMPREHENSIVE PROMPT
         # ==========================================
         
@@ -106,7 +133,10 @@ CRITICAL INSTRUCTIONS:
 4. Integrate scene context naturally into the narrative
 5. Mention background elements when relevant (sky, water, etc.)
 6. Include temporal flow (when objects appear/move/disappear)
-7. Keep it concise (2-4 sentences)
+7. Use spatial relationships (person ON log, water on BOTH SIDES)
+8. Mention activities (sitting, walking, balancing, embracing)
+9. Reference temporal scene breakdown for structure
+10. Keep it concise but detailed (3-5 sentences or timestamp-based)
 
 """
         
@@ -134,8 +164,23 @@ CRITICAL INSTRUCTIONS:
         if audio_context:
             prompt += f"\n{audio_context}\n"
         
+        # PHASE 4: Add spatial relationships
+        if spatial_context:
+            prompt += f"\n{spatial_context}\n"
+        
+        # PHASE 4: Add activity summary
+        if activity_context:
+            prompt += activity_context
+        
+        # PHASE 4: Add temporal scene breakdown
+        if scene_context_temporal:
+            prompt += f"\n{scene_context_temporal}\n"
+        
         prompt += """
 NARRATIVE STYLE:
+- If temporal scenes are provided, structure narrative by timestamp segments
+- Mention spatial relationships naturally (person on log, water on sides)
+- Include detected activities (sitting, walking, balancing)
 - Start with overall scene description
 - Mention dominant background elements (sky %, water %, etc.)
 - Describe main action/movement
@@ -149,6 +194,13 @@ dominated by sky (45%) and ocean (33%), with sand visible along the shore
 (15%). The individual moves through the frame as birds fly overhead against 
 the backdrop of warm sunset lighting. The sound of crashing waves accompanies 
 the scene throughout the 13-second sequence."
+
+EXAMPLE WITH TEMPORAL BREAKDOWN (forest video):
+"0-4s: Two people sit on a log by a water body, surrounded by dense forest trees.
+4-7s: A girl sits alone on a wooden bench in the forest.
+7-9.5s: The girl walks with arms stretched for balance on a narrow path with 
+water visible on both sides.
+Throughout: Soft piano music creates a peaceful atmosphere."
 
 Now generate a natural narrative for this video:"""
         
@@ -301,6 +353,84 @@ Now generate a natural narrative for this video:"""
             return "AUDIO CONTEXT:\n" + "\n".join(f"- {p}" for p in context_parts)
         return ""
     
+    def _get_spatial_context(self, spatial_rels: List[Dict]) -> str:
+        """
+        PHASE 4: Extract spatial relationship context for narrative
+        """
+        if not spatial_rels:
+            return ""
+        
+        context_parts = []
+        by_type = {}
+        
+        for rel in spatial_rels:
+            rel_type = rel.get('relationship', 'unknown')
+            if rel_type not in by_type:
+                by_type[rel_type] = []
+            by_type[rel_type].append(rel)
+        
+        if 'on' in by_type:
+            on_rels = by_type['on']
+            surfaces = {}
+            for rel in on_rels:
+                obj = rel.get('object', 'surface')
+                surfaces[obj] = surfaces.get(obj, 0) + 1
+            if surfaces:
+                dominant_surface = max(surfaces.items(), key=lambda x: x[1])
+                context_parts.append(f"People frequently on/near {dominant_surface[0]} ({dominant_surface[1]} occurrences)")
+        
+        if 'surrounded_by' in by_type:
+            surround_rels = by_type['surrounded_by']
+            elements = set()
+            for rel in surround_rels:
+                obj = rel.get('object', [])
+                if isinstance(obj, list):
+                    elements.update(obj)
+                else:
+                    elements.add(obj)
+            if elements:
+                context_parts.append(f"Environment: {', '.join(list(elements)[:3])}")
+        
+        if 'water_on_both_sides' in by_type:
+            context_parts.append("Water visible on both sides of path/bridge")
+        
+        if context_parts:
+            return "SPATIAL CONTEXT:\n" + "\n".join(f"- {part}" for part in context_parts)
+        return ""
+    
+    def _get_temporal_context(self, temporal_scenes: List[Dict]) -> str:
+        """
+        PHASE 4: Extract temporal scene breakdown for narrative
+        """
+        if not temporal_scenes or len(temporal_scenes) < 2:
+            return ""
+        
+        context_parts = []
+        
+        for scene in temporal_scenes[:8]:
+            start = scene.get('start_time', 0)
+            end = scene.get('end_time', 0)
+            desc_parts = []
+            
+            objects = scene.get('dominant_objects', [])
+            if objects:
+                obj_names = [obj.get('name', '') for obj in objects[:2]]
+                if obj_names:
+                    desc_parts.append(", ".join(obj_names))
+            
+            env = scene.get('environment', [])
+            if env:
+                env_names = [e.get('name', '') for e in env[:2]]
+                if env_names:
+                    desc_parts.append(f"in {env_names[0]}")
+            
+            description = " ".join(desc_parts) if desc_parts else "scene"
+            context_parts.append(f"{start:.1f}-{end:.1f}s: {description}")
+        
+        if context_parts:
+            return "TEMPORAL BREAKDOWN:\n" + "\n".join(context_parts)
+        return ""
+    
     def _generate_fallback_narrative(self, video_data: Dict) -> str:
         """
         Fallback narrative if API fails
@@ -336,77 +466,9 @@ def generate_phase4_narrative(video_data: Dict) -> str:
     PHASE 4: Generate narrative using complete video analysis
     
     Usage in backend:
-    from narrative_service import generate_phase4_narrative
+    from app.utils.narrative_service import generate_phase4_narrative
     
     narrative = generate_phase4_narrative(video_data)
     """
     service = NarrativeIntelligenceService()
     return service.generate_narrative(video_data)
-
-
-# Example usage
-"""
-PHASE 4 EXAMPLE - Beach Video:
-
-Input video_data:
-{
-  'metadata': {'duration': 13.8, 'fps': 30},
-  'detections': [
-    # 197 object detections with track_id
-    # 23 pose detections
-    # 48 panoptic segments
-  ],
-  'summary': {
-    'unique_tracked_objects': 1,  # Only 1 person!
-    'by_class': {'person': 197}
-  },
-  'scenes': [
-    {'scene': 'beach at dusk', 'confidence': 0.92}
-  ],
-  'lighting_analysis': {
-    'dominant_time_of_day': 'sunset_dusk',
-    'avg_brightness': 112.3
-  },
-  'scene_composition': {  # PHASE 3!
-    'scene_type': 'beach',
-    'background': {
-      'dominant_elements': [
-        {'name': 'sky-other', 'coverage': 45.2},
-        {'name': 'sea', 'coverage': 32.8},
-        {'name': 'sand', 'coverage': 15.3}
-      ]
-    },
-    'foreground': {
-      'dominant_elements': [
-        {'name': 'person', 'coverage': 3.2},
-        {'name': 'bird', 'coverage': 0.8}
-      ]
-    }
-  },
-  'audio_analysis': {
-    'has_audio': True,
-    'audio_events': [
-      {'description': 'Low frequency sound'}
-    ]
-  }
-}
-
-Generated Narrative:
-"The video captures a person walking along a beach during dusk. The scene 
-is dominated by sky (45%) and ocean (33%), with sand visible along the 
-shore (15%). The individual moves steadily through the frame from beginning 
-to end as birds fly overhead. The warm lighting of the setting sun creates 
-a tranquil atmosphere, with the sound of gentle waves audible throughout 
-the 13-second sequence."
-
-WHY THIS IS AMAZING:
-- ✅ Knows it's 1 person (track-aware), not 197 people
-- ✅ Mentions background elements (sky, ocean, sand) with percentages
-- ✅ Includes scene type (beach) and atmosphere (dusk)
-- ✅ Temporal understanding (beginning to end)
-- ✅ Audio integration (waves)
-- ✅ Lighting context (warm sunset)
-- ✅ Natural, flowing prose
-
-This is HUMAN-LEVEL understanding! 🎯
-"""

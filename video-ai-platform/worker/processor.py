@@ -60,6 +60,25 @@ except ImportError:
     PANOPTIC_AVAILABLE = False
     print("⚠️  transformers not installed. Run: pip install transformers")
 
+# PHASE 4: Advanced Analysis Modules
+try:
+    from activity_recognition import ActivityRecognizer
+    ACTIVITY_AVAILABLE = True
+except ImportError:
+    ACTIVITY_AVAILABLE = False
+
+try:
+    from spatial_relationships import SpatialRelationshipAnalyzer
+    SPATIAL_AVAILABLE = True
+except ImportError:
+    SPATIAL_AVAILABLE = False
+
+try:
+    from scene_segmenter import TemporalSceneSegmenter
+    SCENE_SEG_AVAILABLE = True
+except ImportError:
+    SCENE_SEG_AVAILABLE = False
+
 class UltimateVideoProcessor:
     def __init__(self):
         print("="*70)
@@ -174,8 +193,46 @@ class UltimateVideoProcessor:
             self.use_panoptic = False
             print("   ⚠️  Not installed (pip install transformers)")
         
+        # PHASE 4: Advanced Analysis Modules
+        print("\n8️⃣  Advanced Analysis Modules:")
+        if ACTIVITY_AVAILABLE:
+            try:
+                self.activity_recognizer = ActivityRecognizer()
+                self.use_activity = True
+                print("   ✓ Activity recognition ready")
+            except Exception as e:
+                self.use_activity = False
+                print(f"   ⚠️  Activity recognition failed: {e}")
+        else:
+            self.use_activity = False
+
+        if SPATIAL_AVAILABLE:
+            try:
+                self.spatial_analyzer = SpatialRelationshipAnalyzer()
+                self.use_spatial = True
+                print("   ✓ Spatial analysis ready")
+            except Exception as e:
+                self.use_spatial = False
+                print(f"   ⚠️  Spatial analysis failed: {e}")
+        else:
+            self.use_spatial = False
+
+        if SCENE_SEG_AVAILABLE:
+            try:
+                self.scene_segmenter = TemporalSceneSegmenter(threshold=0.3)
+                self.use_scene_seg = True
+                print("   ✓ Scene segmenter ready")
+            except Exception as e:
+                self.use_scene_seg = False
+                print(f"   ⚠️  Scene segmenter failed: {e}")
+        else:
+            self.use_scene_seg = False
+        
         print("\n" + "="*70)
-        if self.use_panoptic:
+        advanced_enabled = self.use_activity or self.use_spatial or self.use_scene_seg
+        if self.use_panoptic and advanced_enabled:
+            print("✅ All systems loaded (PHASE 1+2+3+4 COMPLETE!)")
+        elif self.use_panoptic:
             print("✅ All systems loaded (INCLUDING PHASE 3 PANOPTIC!)")
         else:
             print("✅ All systems loaded successfully")
@@ -209,7 +266,9 @@ class UltimateVideoProcessor:
             'scenes': [],
             'lighting': [],
             'tracking': [],
-            'panoptic': []  # PHASE 3
+            'panoptic': [],  # PHASE 3
+            'spatial_relationships': [],  # PHASE 4
+            'activities': []  # PHASE 4
         }
         
         frame_count = 0
@@ -321,12 +380,46 @@ class UltimateVideoProcessor:
         if all_data['panoptic']:
             print(f"🎨 Panoptic: {len(all_data['panoptic'])} segments")
         
+        # PHASE 4: Analyze spatial relationships
+        if self.use_spatial and all_data['panoptic']:
+            print(f"\n🔍 Analyzing spatial relationships...")
+            timestamps = sorted(set([d['timestamp'] for d in all_data['objects']]))
+            for ts in timestamps:
+                frame_detections = [d for d in all_data['objects'] if d['timestamp'] == ts]
+                frame_panoptic = [p for p in all_data['panoptic'] if p['timestamp'] == ts]
+                if frame_detections and frame_panoptic:
+                    try:
+                        relationships = self.spatial_analyzer.analyze_relationships(frame_detections, frame_panoptic)
+                        for rel in relationships:
+                            rel['timestamp'] = ts
+                            all_data['spatial_relationships'].append(rel)
+                    except Exception:
+                        pass
+            if all_data['spatial_relationships']:
+                print(f"   ✓ Found {len(all_data['spatial_relationships'])} spatial relationships")
+        
+        # PHASE 4: Segment video into temporal scenes
+        temporal_scenes = []
+        if self.use_scene_seg:
+            print(f"\n📹 Segmenting video into scenes...")
+            try:
+                all_detections = self._merge_all(all_data)
+                temporal_scenes = self.scene_segmenter.segment_video(all_detections, duration)
+                print(f"   ✓ Created {len(temporal_scenes)} scene segments")
+            except Exception:
+                temporal_scenes = []
+        
         print(f"\n✅ Complete!")
         print(f"   Objects: {len(all_data['objects'])}")
         print(f"   Poses: {len(all_data['poses'])}")
         print(f"   Segments: {len(all_data['segments'])}")
         if all_data['panoptic']:
             print(f"   Panoptic: {len(all_data['panoptic'])}")
+        if all_data['spatial_relationships']:
+            print(f"   🎭 Activities: {len([p for p in all_data['poses'] if p.get('activity') != 'unknown'])}")
+            print(f"   🔗 Spatial relationships: {len(all_data['spatial_relationships'])}")
+        if temporal_scenes:
+            print(f"   📹 Temporal scenes: {len(temporal_scenes)}")
         
         # Audio processing
         audio_results = None
@@ -352,11 +445,14 @@ class UltimateVideoProcessor:
                 'total_frames': total_frames,
                 'duration': duration,
                 'frames_processed': processed_count,
-                'processing_mode': 'phase1_phase2_phase3' if self.use_panoptic else ('phase1_phase2_wbf' if self.use_wbf else 'phase1_complete'),
+                'processing_mode': 'phase1_phase2_phase3_phase4' if (self.use_panoptic and self.use_activity) else ('phase1_phase2_phase3' if self.use_panoptic else ('phase1_phase2_wbf' if self.use_wbf else 'phase1_complete')),
                 'ensemble_models': self._get_ensemble_models(),
                 'has_audio': audio_results.get('has_audio', False) if audio_results else False,
                 'wbf_enabled': self.use_wbf,
-                'panoptic_enabled': self.use_panoptic  # PHASE 3
+                'panoptic_enabled': self.use_panoptic,  # PHASE 3
+                'activity_enabled': self.use_activity,  # PHASE 4
+                'spatial_enabled': self.use_spatial,  # PHASE 4
+                'scene_seg_enabled': self.use_scene_seg  # PHASE 4
             },
             'detections': self._merge_all(all_data),
             'summary': self._create_summary(all_data, fps, duration, audio_results),
@@ -364,7 +460,10 @@ class UltimateVideoProcessor:
             'motion_analysis': self._summarize_motion(all_data['motion']),
             'lighting_analysis': self._summarize_lighting(all_data['lighting']),
             'tracking_summary': self._summarize_tracking(all_data['tracking']),
-            'audio_analysis': audio_results
+            'audio_analysis': audio_results,
+            'spatial_relationships': all_data.get('spatial_relationships', []),  # PHASE 4
+            'temporal_scenes': temporal_scenes,  # PHASE 4
+            'activity_summary': self._summarize_activities(all_data['poses'])  # PHASE 4
         }
         
         # PHASE 3: Add scene composition
@@ -389,11 +488,11 @@ class UltimateVideoProcessor:
         """PHASE 2: Weighted Boxes Fusion"""
         # Run all models
         results_11x = self.model_11x.track(
-            frame, conf=0.40, iou=0.45, persist=True,
+            frame, conf=0.30, iou=0.45, persist=True,
             tracker=self.tracker_type, verbose=False
         )
-        results_10x = self.model_10x(frame, conf=0.40, verbose=False)
-        results_9 = self.model_9(frame, conf=0.40, verbose=False) if self.use_tertiary else None
+        results_10x = self.model_10x(frame, conf=0.30, verbose=False)
+        results_9 = self.model_9(frame, conf=0.30, verbose=False) if self.use_tertiary else None
         
         # Prepare for WBF
         boxes_list = []
@@ -847,13 +946,13 @@ class UltimateVideoProcessor:
         
         data['objects'] = self._filter_false_positives(data['objects'], width, height)
         
-        # Poses
+        # Poses with PHASE 4 Activity Recognition
         for result in pose_results:
             if result.keypoints is None:
                 continue
             for kp in result.keypoints:
                 if kp.conf is not None and kp.conf.mean() > 0.5:
-                    data['poses'].append({
+                    pose_data = {
                         'frame': frame_num,
                         'timestamp': timestamp,
                         'confidence': float(kp.conf.mean()),
@@ -862,7 +961,21 @@ class UltimateVideoProcessor:
                         'class_id': 0,
                         'class_name': 'person',
                         'bbox': {'x1': 0, 'y1': 0, 'x2': 0, 'y2': 0}
-                    })
+                    }
+                    
+                    # PHASE 4: Add activity recognition
+                    if self.use_activity:
+                        try:
+                            kp_xy = kp.xy[0].cpu().numpy() if hasattr(kp.xy[0], 'cpu') else kp.xy[0]
+                            kp_conf = kp.conf[0].cpu().numpy() if hasattr(kp.conf[0], 'cpu') else kp.conf[0]
+                            activity_result = self.activity_recognizer.recognize_activity(kp_xy, kp_conf)
+                            pose_data['activity'] = activity_result.get('activity', 'unknown')
+                            pose_data['activity_confidence'] = activity_result.get('confidence', 0.0)
+                            pose_data['activity_details'] = activity_result.get('details', {})
+                        except Exception:
+                            pose_data['activity'] = 'unknown'
+                    
+                    data['poses'].append(pose_data)
         
         # Segments
         for result in segment_results:
@@ -888,35 +1001,35 @@ class UltimateVideoProcessor:
         
         return data
     
-        def _merge_all(self, all_data):
-            """
-            Merge all REAL detection types
-            
-            NOTE: scenes and lighting are METADATA, not detections!
-            They should only be in the summary/metadata fields, not in detections array.
-            """
-            merged = []
-            
-            # ✅ Real object detections
-            merged.extend(all_data['objects'])
-            merged.extend(all_data['poses'])
-            merged.extend(all_data['segments'])
-            
-            # ✅ Significant motion detections
-            for m in all_data.get('motion', []):
-                if m.get('significant_motion'):
-                    merged.append(m)
-            
-            # ❌ REMOVED: Don't add scenes to detections (they're metadata!)
-            # merged.extend(all_data.get('scenes', []))
-            
-            # ❌ REMOVED: Don't add lighting to detections (it's metadata!)
-            # merged.extend(all_data.get('lighting', []))
-            
-            # ✅ Panoptic segmentation (real background detections)
-            merged.extend(all_data.get('panoptic', []))
-            
-            return merged
+    def _merge_all(self, all_data):
+        """
+        Merge all REAL detection types
+        
+        NOTE: scenes and lighting are METADATA, not detections!
+        They should only be in the summary/metadata fields, not in detections array.
+        """
+        merged = []
+        
+        # ✅ Real object detections
+        merged.extend(all_data['objects'])
+        merged.extend(all_data['poses'])
+        merged.extend(all_data['segments'])
+        
+        # ✅ Significant motion detections
+        for m in all_data.get('motion', []):
+            if m.get('significant_motion'):
+                merged.append(m)
+        
+        # ❌ REMOVED: Don't add scenes to detections (they're metadata!)
+        # merged.extend(all_data.get('scenes', []))
+        
+        # ❌ REMOVED: Don't add lighting to detections (it's metadata!)
+        # merged.extend(all_data.get('lighting', []))
+        
+        # ✅ Panoptic segmentation (real background detections)
+        merged.extend(all_data.get('panoptic', []))
+        
+        return merged
  
     
     # ==========================================
@@ -1075,4 +1188,27 @@ class UltimateVideoProcessor:
     
     def prepare_for_dynamodb(self, results: Dict) -> Dict:
         """Prepare for DynamoDB"""
-        return self._convert_to_decimal(results)
+        return self._convert_to_decimal(results)    
+    def _summarize_activities(self, poses: List[Dict]) -> Dict:
+        """PHASE 4: Summarize detected activities"""
+        if not poses:
+            return {}
+        
+        activities = {}
+        for pose in poses:
+            activity = pose.get('activity', 'unknown')
+            if activity and activity != 'unknown':
+                activities[activity] = activities.get(activity, 0) + 1
+        
+        if not activities:
+            return {}
+        
+        total = sum(activities.values())
+        dominant = max(activities.items(), key=lambda x: x[1])[0]
+        
+        return {
+            'activities': activities,
+            'total_frames_with_activity': total,
+            'dominant_activity': dominant,
+            'activity_distribution': {k: round(v/total*100, 1) for k, v in activities.items()}
+        }
