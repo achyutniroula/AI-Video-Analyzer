@@ -4,7 +4,7 @@
  */
 import { fetchAuthSession } from 'aws-amplify/auth';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 /**
  * Get authentication token from Amplify session

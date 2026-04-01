@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Dark theme (default) ─────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --bg:               #0e0e0f;
+  --surface:          #19191b;
+  --surface-low:      #131315;
+  --surface-high:     #1f1f22;
+  --glass-bg:         rgba(37, 38, 40, 0.65);
+  --glass-border:     rgba(72, 72, 75, 0.22);
+  --glass-border-h:   rgba(198, 198, 200, 0.2);
+  --on-surface:       #e7e5e8;
+  --on-muted:         #acaaae;
+  --outline:          #767578;
+  --outline-dim:      #48484b;
+  --outline-faint:    rgba(72, 72, 75, 0.18);
+  --primary:          #c6c6c8;
+  --primary-dim:      #b8b9bb;
+  --input-bg:         #0e0e0f;
+  --input-border:     rgba(72, 72, 75, 0.4);
+  --error:            #ee7d77;
+  --success:          #6ee7b7;
+  --spinner-color:    rgba(198, 198, 200, 0.5);
+  --ambient-glow:     rgba(198, 198, 200, 0.025);
+  --ctrl-bg:          rgba(14, 14, 15, 0.95);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ── Light theme ──────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:               #F2F2F5;
+  --surface:          #E8E8EC;
+  --surface-low:      #EEEEF2;
+  --surface-high:     #DCDCE0;
+  --glass-bg:         rgba(255, 255, 255, 0.72);
+  --glass-border:     rgba(0, 0, 0, 0.07);
+  --glass-border-h:   rgba(0, 0, 0, 0.18);
+  --on-surface:       #1a1a1c;
+  --on-muted:         #4a4a4c;
+  --outline:          #7a7a7c;
+  --outline-dim:      #bcbcbe;
+  --outline-faint:    rgba(0, 0, 0, 0.07);
+  --primary:          #3c3c3e;
+  --primary-dim:      #5a5a5c;
+  --input-bg:         rgba(255, 255, 255, 0.8);
+  --input-border:     rgba(0, 0, 0, 0.1);
+  --error:            #c0392b;
+  --success:          #27ae60;
+  --spinner-color:    rgba(60, 60, 62, 0.5);
+  --ambient-glow:     rgba(0, 0, 0, 0.03);
+  --ctrl-bg:          rgba(26, 26, 28, 0.92);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--on-surface);
+  font-family: 'Manrope', sans-serif;
+  font-weight: 300;
+  transition: background 0.3s ease, color 0.3s ease;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Manrope', sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  font-size: inherit;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--outline-faint); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--glass-border); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }

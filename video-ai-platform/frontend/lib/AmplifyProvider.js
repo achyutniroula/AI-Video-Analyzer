@@ -6,7 +6,6 @@
  */
 
 import { Amplify } from 'aws-amplify';
-import { useEffect } from 'react';
 
 const amplifyConfig = {
   Auth: {
@@ -21,13 +20,11 @@ const amplifyConfig = {
   }
 };
 
-export function AmplifyProvider({ children }) {
-  useEffect(() => {
-    // Configure Amplify on client side
-    Amplify.configure(amplifyConfig, { ssr: false });
-    console.log('✓ Amplify configured in AmplifyProvider');
-  }, []);
+// Configure immediately at module load time — not in useEffect
+// This prevents the race condition where page effects run before Amplify is configured
+Amplify.configure(amplifyConfig, { ssr: false });
 
+export function AmplifyProvider({ children }) {
   return <>{children}</>;
 }
 

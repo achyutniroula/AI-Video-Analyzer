@@ -193,7 +193,38 @@ export default function ModelBreakdown({ detections, video, audio_analysis }) {
   });
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+    <div className="mt-2" style={{ color: '#e8e8f0' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .model-breakdown-wrap { font-family: 'Modern No. 20', Georgia, serif !important; }
+        .model-breakdown-wrap * { font-family: 'Modern No. 20', Georgia, serif !important; }
+        .model-breakdown-wrap .text-gray-800, .model-breakdown-wrap .text-gray-900 { color: #e8e8f0 !important; }
+        .model-breakdown-wrap .text-gray-600, .model-breakdown-wrap .text-gray-500 { color: #9999aa !important; }
+        .model-breakdown-wrap .bg-white { background: rgba(255,255,255,0.025) !important; border: 1px solid rgba(129,140,248,0.1) !important; backdrop-filter: blur(16px) !important; }
+        .model-breakdown-wrap .bg-blue-50, .model-breakdown-wrap .bg-indigo-50, .model-breakdown-wrap .bg-fuchsia-50, .model-breakdown-wrap .bg-amber-50, .model-breakdown-wrap .bg-green-50 { background: rgba(255,255,255,0.03) !important; }
+        .model-breakdown-wrap .bg-gradient-to-r { background: rgba(129,140,248,0.06) !important; border: 1px solid rgba(129,140,248,0.15) !important; }
+        .model-breakdown-wrap .border-blue-200, .model-breakdown-wrap .border-indigo-200, .model-breakdown-wrap .border-fuchsia-200, .model-breakdown-wrap .border-amber-200, .model-breakdown-wrap .border-green-200 { border-color: rgba(255,255,255,0.07) !important; }
+        .model-breakdown-wrap .text-blue-600, .model-breakdown-wrap .text-blue-700 { color: #818cf8 !important; }
+        .model-breakdown-wrap .text-green-600, .model-breakdown-wrap .text-green-700 { color: #34d399 !important; }
+        .model-breakdown-wrap .text-purple-600, .model-breakdown-wrap .text-indigo-600 { color: #a78bfa !important; }
+        .model-breakdown-wrap .bg-blue-100, .model-breakdown-wrap .text-blue-800 { background: rgba(129,140,248,0.1) !important; color: #c4b5fd !important; }
+        .model-breakdown-wrap .bg-yellow-50, .model-breakdown-wrap .border-yellow-200 { background: rgba(251,191,36,0.05) !important; border-color: rgba(251,191,36,0.15) !important; }
+        .model-breakdown-wrap .text-yellow-800 { color: #fde68a !important; }
+        .model-breakdown-wrap .border-b { border-bottom-color: rgba(255,255,255,0.07) !important; }
+        .model-breakdown-wrap .border-t { border-top-color: rgba(255,255,255,0.07) !important; }
+        .model-breakdown-wrap .border-gray-200 { border-color: rgba(255,255,255,0.07) !important; }
+        .model-breakdown-wrap .text-indigo-700, .model-breakdown-wrap .bg-indigo-100 { color: #a78bfa !important; background: rgba(129,140,248,0.1) !important; }
+        .model-breakdown-wrap .text-fuchsia-700, .model-breakdown-wrap .bg-fuchsia-100 { color: #e879f9 !important; background: rgba(232,121,249,0.08) !important; }
+        .model-breakdown-wrap .text-amber-700, .model-breakdown-wrap .bg-amber-100 { color: #fbbf24 !important; background: rgba(251,191,36,0.08) !important; }
+        .model-breakdown-wrap .text-green-700, .model-breakdown-wrap .bg-green-100 { color: #34d399 !important; background: rgba(52,211,153,0.08) !important; }
+        .model-breakdown-wrap .text-red-600, .model-breakdown-wrap .text-red-800 { color: #f87171 !important; }
+        .model-breakdown-wrap .bg-red-50 { background: rgba(239,68,68,0.05) !important; }
+        .model-breakdown-wrap .bg-gray-50 { background: rgba(255,255,255,0.025) !important; }
+        .model-breakdown-wrap .bg-gray-200 { background: rgba(255,255,255,0.08) !important; }
+        .model-breakdown-wrap .text-gray-700 { background: rgba(255,255,255,0.07) !important; color: #c4b5fd !important; }
+        .model-breakdown-wrap .rounded-lg { border-radius: 12px !important; }
+        .model-breakdown-wrap .shadow-md, .model-breakdown-wrap .shadow-sm { box-shadow: 0 2px 12px rgba(0,0,0,0.3) !important; }
+      `}} />
+      <div className="model-breakdown-wrap">
       <h2 className="text-2xl font-bold text-gray-800 mb-2">
         🔬 Complete Detection Stack Analysis
       </h2>
@@ -454,6 +485,7 @@ export default function ModelBreakdown({ detections, video, audio_analysis }) {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }

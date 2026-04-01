@@ -3,6 +3,25 @@
 import { useState, useEffect } from 'react';
 import { listVideos } from '../lib/api';
 import Link from 'next/link';
+import { GlowCard } from '@/components/ui/spotlight-card';
+import { GlassButton } from '@/components/ui/liquid-glass-button';
+
+const font = "'Manrope', sans-serif";
+
+function StatusBadge({ status }) {
+  const config = {
+    completed: { color: '#6ee7b7', bg: 'rgba(52,211,153,0.06)', border: 'rgba(52,211,153,0.18)', icon: 'check_circle' },
+    processing: { color: '#acaaae', bg: 'rgba(172,170,174,0.06)', border: 'rgba(172,170,174,0.18)', icon: 'progress_activity' },
+    failed: { color: '#ee7d77', bg: 'rgba(238,125,119,0.06)', border: 'rgba(238,125,119,0.18)', icon: 'error' },
+  };
+  const c = config[status] || { color: '#767578', bg: 'rgba(118,117,120,0.06)', border: 'rgba(118,117,120,0.18)', icon: 'schedule' };
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: c.bg, border: `1px solid ${c.border}`, color: c.color, fontSize: '0.68rem', fontWeight: 300, padding: '0.2rem 0.625rem', borderRadius: 3, textTransform: 'capitalize', letterSpacing: '0.08em', fontFamily: font }}>
+      <span className="material-symbols-outlined" style={{ fontSize: 11, fontVariationSettings: "'FILL' 0, 'wght' 300" }}>{c.icon}</span>
+      {status}
+    </span>
+  );
+}
 
 export default function VideoList() {
   const [videos, setVideos] = useState([]);
@@ -10,54 +29,33 @@ export default function VideoList() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    loadVideos();
-  }, []);
+  useEffect(() => { loadVideos(); }, []);
 
   async function loadVideos() {
     try {
       setLoading(true);
       setError(null);
       const data = await listVideos();
-      console.log('Loaded videos:', data); // Debug log
       setVideos(data.videos);
     } catch (err) {
       setError(err.message);
-      console.error('Error loading videos:', err);
     } finally {
       setLoading(false);
     }
   }
 
-  const filteredVideos = videos.filter(video => {
-    if (filter === 'all') return true;
-    return video.status === filter;
-  });
+  const filteredVideos = videos.filter(v => filter === 'all' || v.status === filter);
 
   function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  }
-
-  function getStatusColor(status) {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading videos...</p>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(198,198,200,0.4)', borderTopColor: 'transparent', animation: 'spin 0.9s linear infinite', margin: '0 auto 1rem' }} />
+          <p style={{ color: '#767578', fontFamily: font, fontSize: '0.875rem', fontWeight: 300, letterSpacing: '0.05em' }}>Loading library...</p>
         </div>
       </div>
     );
@@ -65,150 +63,138 @@ export default function VideoList() {
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Error loading videos: {error}</p>
-          <button
-            onClick={loadVideos}
-            className="mt-2 text-red-600 hover:text-red-800 underline"
-          >
-            Try again
-          </button>
-        </div>
+      <div style={{ maxWidth: 560, margin: '4rem auto', padding: '0 1.5rem' }}>
+        <GlowCard className="p-7">
+          <p style={{ color: '#ee7d77', marginBottom: '1.25rem', fontFamily: font, fontSize: '0.875rem', fontWeight: 300 }}>Error loading videos: {error}</p>
+          <GlassButton onClick={loadVideos} variant="secondary" size="sm">Try again</GlassButton>
+        </GlowCard>
       </div>
     );
   }
 
+  const filters = ['all', 'completed', 'processing', 'failed'];
+
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Videos</h1>
-        <p className="text-gray-600">View and manage your uploaded videos</p>
+    <div style={{ padding: '3.5rem 3rem', fontFamily: font }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.25rem' }}>
+        <div>
+          <p style={{ fontSize: '0.65rem', fontWeight: 300, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#767578', marginBottom: '1rem' }}>Library</p>
+          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2rem, 4vw, 3rem)', color: '#e7e5e8', letterSpacing: '0.03em' }}>Recent Captures</h1>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <GlassButton onClick={loadVideos} variant="secondary" size="sm">
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>refresh</span>
+            Refresh
+          </GlassButton>
+          <Link href="/upload">
+            <GlassButton size="sm">
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>upload</span>
+              Import Media
+            </GlassButton>
+          </Link>
+        </div>
       </div>
 
-      <div className="mb-6 border-b border-gray-200">
-        <nav className="flex space-x-8">
-          {['all', 'completed', 'processing', 'failed'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${
-                filter === status
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {status} ({videos.filter(v => status === 'all' || v.status === status).length})
-            </button>
-          ))}
-        </nav>
+      {/* Filter tabs */}
+      <div style={{ display: 'flex', gap: '0.375rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
+        {filters.map(f => (
+          <button key={f} onClick={() => setFilter(f)} style={{
+            padding: '0.4rem 1rem',
+            borderRadius: 3,
+            fontSize: '0.72rem',
+            fontWeight: 300,
+            cursor: 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.2,0,0,1)',
+            fontFamily: font,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            background: filter === f ? 'rgba(198,198,200,0.08)' : 'transparent',
+            border: filter === f ? '1px solid rgba(198,198,200,0.2)' : '1px solid rgba(72,72,75,0.25)',
+            color: filter === f ? '#b8b9bb' : '#767578',
+          }}>
+            {f} ({videos.filter(v => f === 'all' || v.status === f).length})
+          </button>
+        ))}
       </div>
 
+      {/* Empty state */}
       {filteredVideos.length === 0 ? (
-        <div className="text-center py-12">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No videos</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {filter === 'all' 
-              ? 'Get started by uploading a video.'
-              : `No ${filter} videos found.`}
+        <div style={{ textAlign: 'center', padding: '6rem 0' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 48, color: '#252628', display: 'block', marginBottom: '1.75rem', fontVariationSettings: "'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 48" }}>video_library</span>
+          <h3 style={{ fontFamily: font, color: '#acaaae', fontWeight: 300, fontSize: '1.1rem', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>No captures</h3>
+          <p style={{ color: '#767578', marginBottom: '2.5rem', fontFamily: font, fontSize: '0.875rem', fontWeight: 300 }}>
+            {filter === 'all' ? 'Import a video to get started.' : `No ${filter} videos found.`}
           </p>
-          <div className="mt-6">
-            <Link
-              href="/upload"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Upload Video
-            </Link>
-          </div>
+          <Link href="/upload"><GlassButton>Import Media</GlassButton></Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredVideos.map((video) => (
-            <Link
-              key={video.video_id}
-              href={`/videos/${video.video_id}`}
-              className="group relative bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-200 overflow-hidden"
-              style={{ display: 'block' }} // Force display
-            >
-              {/* Video Thumbnail Placeholder */}
-              <div className="aspect-video bg-gray-200 flex items-center justify-center">
-                <svg className="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+          {filteredVideos.map(video => (
+            <Link key={video.video_id} href={`/videos/${video.video_id}`} style={{ display: 'block', textDecoration: 'none' }}>
+              <GlowCard
+                style={{ cursor: 'pointer', transition: 'transform 0.3s cubic-bezier(0.2,0,0,1)' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px) scale(1.005)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
+              >
+                {/* Thumbnail */}
+                <div style={{ background: '#131315', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(72,72,75,0.15)', position: 'relative', overflow: 'hidden' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 36, color: '#252628', fontVariationSettings: "'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 48" }}>movie</span>
+                  <div style={{ position: 'absolute', top: '0.625rem', right: '0.625rem' }}>
+                    <StatusBadge status={video.status} />
+                  </div>
+                </div>
 
-              {/* Video Info - WITH INLINE STYLES TO FORCE VISIBILITY */}
-              <div className="p-4" style={{ backgroundColor: 'white', position: 'relative', zIndex: 10 }}>
-                <div className="flex items-start justify-between mb-2">
-                  <h3 
-                    className="text-sm font-medium text-gray-900 group-hover:text-blue-600 truncate flex-1"
-                    style={{ color: '#111', fontSize: '14px', fontWeight: '500' }} // Force visibility
-                  >
+                {/* Info */}
+                <div style={{ padding: '1.25rem' }}>
+                  <p style={{ color: '#e7e5e8', fontWeight: 300, fontSize: '0.825rem', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '1rem', letterSpacing: '0.02em' }}>
                     {video.video_id}
-                  </h3>
-                  <span 
-                    className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(video.status)}`}
-                    style={{ fontSize: '12px' }} // Force visibility
-                  >
-                    {video.status}
-                  </span>
-                </div>
-
-                <div className="space-y-1 text-xs text-gray-500">
-                  {video.metadata && (
-                    <>
-                      <p style={{ color: '#666', fontSize: '12px' }}>
-                        Resolution: {video.metadata.width}x{video.metadata.height}
-                      </p>
-                      <p style={{ color: '#666', fontSize: '12px' }}>
-                        Duration: {video.metadata.duration?.toFixed(1)}s
-                      </p>
-                      <p style={{ color: '#666', fontSize: '12px' }}>
-                        FPS: {video.metadata.fps?.toFixed(1)}
-                      </p>
-                    </>
-                  )}
-                  <p style={{ color: '#666', fontSize: '12px' }}>
-                    Uploaded: {formatDate(video.created_at)}
                   </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                    {video.metadata?.duration && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#48484b' }}>schedule</span>
+                        <span style={{ color: '#767578', fontSize: '0.75rem', fontFamily: font, fontWeight: 300 }}>{video.metadata.duration?.toFixed(1)}s</span>
+                      </div>
+                    )}
+                    {video.metadata?.width && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#48484b' }}>aspect_ratio</span>
+                        <span style={{ color: '#767578', fontSize: '0.75rem', fontFamily: font, fontWeight: 300 }}>{video.metadata.width}×{video.metadata.height}</span>
+                      </div>
+                    )}
+                    {video.metadata?.fps && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#48484b' }}>speed</span>
+                        <span style={{ color: '#767578', fontSize: '0.75rem', fontFamily: font, fontWeight: 300 }}>{video.metadata.fps?.toFixed(0)} fps</span>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#48484b' }}>calendar_today</span>
+                      <span style={{ color: '#767578', fontSize: '0.75rem', fontFamily: font, fontWeight: 300 }}>{formatDate(video.created_at)}</span>
+                    </div>
+                  </div>
+
+                  {video.status === 'completed' && video.total_detections !== undefined && (
+                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(72,72,75,0.15)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <span style={{ color: '#b8b9bb', fontWeight: 300, fontSize: '0.95rem', fontFamily: font }}>{video.total_detections}</span>
+                      <span style={{ color: '#48484b', fontSize: '0.77rem', fontFamily: font, fontWeight: 300, letterSpacing: '0.05em' }}>detection{video.total_detections !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+
+                  {video.status === 'failed' && video.error_message && (
+                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(72,72,75,0.15)' }}>
+                      <p style={{ color: '#ee7d77', fontSize: '0.77rem', fontFamily: font, fontWeight: 300 }}>{video.error_message}</p>
+                    </div>
+                  )}
                 </div>
-
-                {video.status === 'completed' && video.total_detections !== undefined && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <p className="text-sm font-medium text-gray-900" style={{ color: '#111', fontSize: '14px', fontWeight: '600' }}>
-                      {video.total_detections} detection{video.total_detections !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                )}
-
-                {video.status === 'failed' && video.error_message && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <p className="text-xs text-red-600" style={{ color: '#dc2626', fontSize: '12px' }}>
-                      Error: {video.error_message}
-                    </p>
-                  </div>
-                )}
-              </div>
+              </GlowCard>
             </Link>
           ))}
         </div>
       )}
-
-      <div className="mt-8 text-center">
-        <button
-          onClick={loadVideos}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-        >
-          <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Refresh
-        </button>
-      </div>
     </div>
   );
 }

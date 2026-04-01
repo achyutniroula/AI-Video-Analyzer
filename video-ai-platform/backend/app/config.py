@@ -22,8 +22,11 @@ class Settings(BaseSettings):
     UPLOAD_EXPIRATION: int = 600
     MAX_FILE_SIZE: int = 500 * 1024 * 1024
     
-    # DynamoDB Configuration (ADD THIS)
+    # DynamoDB Configuration
     DYNAMODB_TABLE_NAME: str = "video-detections"
+
+    # SQS Configuration
+    SQS_QUEUE_URL: str = ""
     
     model_config = ConfigDict(
         env_file=".env",

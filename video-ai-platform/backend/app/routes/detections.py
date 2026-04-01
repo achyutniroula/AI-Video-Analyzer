@@ -107,54 +107,68 @@ async def get_video_detections(
     if video.get('user_id') != current_user['user_id']:
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # ✅ FIX: Fetch full detections + audio_analysis from S3
-    s3_key = f"results/{video_id}/detections.json"
-    
+    # Use results_s3_key from DynamoDB if present (new worker),
+    # otherwise fall back to old hardcoded key (old worker)
+    s3_key = video.get('results_s3_key') or f"results/{video_id}/detections.json"
+
     detections = []
     audio_analysis = None
-    
+    summary = video.get('summary', {})
+    metadata = video.get('metadata', {})
+    scenes = video.get('scenes', [])
+    scene_composition = video.get('scene_composition', {})
+    lighting_analysis = video.get('lighting_analysis', {})
+
     try:
-        print(f"Fetching detections from S3: {s3_key}")
+        print(f"Fetching analysis from S3: {s3_key}")
         s3_response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
-        detections_data = json.loads(s3_response['Body'].read())
-        
-        # Get detections
-        detections = detections_data.get('detections', [])
-        print(f"✓ Loaded {len(detections)} detections from S3")
-        
-        # ✅ NEW: Get audio_analysis from S3
-        audio_analysis = detections_data.get('audio_analysis')
-        if audio_analysis:
-            print(f"✓ Loaded audio analysis from S3:")
-            print(f"  - Whisper segments: {len(audio_analysis.get('transcript', {}).get('segments', []))}")
-            print(f"  - Wav2Vec2 classifications: {len(audio_analysis.get('wav2vec2_classifications', []))}")
-            print(f"  - Audio events: {len(audio_analysis.get('audio_events', []))}")
-            print(f"  - Fused moments: {len(audio_analysis.get('fused_data', {}).get('timeline', []))}")
+        s3_data = json.loads(s3_response['Body'].read())
+
+        if 'detections' in s3_data:
+            # Old worker format — detections.json
+            detections = s3_data.get('detections', [])
+            audio_analysis = s3_data.get('audio_analysis')
+            if not audio_analysis:
+                audio_analysis = video.get('audio_analysis')
+            print(f"✓ Loaded {len(detections)} detections from S3 (old format)")
         else:
-            print("  No audio_analysis in S3 data")
-            # Fallback to DynamoDB
-            audio_analysis = video.get('audio_analysis')
-            if audio_analysis:
-                print("  ✓ Found audio_analysis in DynamoDB (fallback)")
-                
+            # New worker format — analysis.json
+            # No per-frame bounding boxes; map narrative/scene info instead
+            scenes = [{"scene_type": st} for st in s3_data.get('scene_types', [])]
+            summary = {
+                "total_detections": 0,
+                "unique_tracked_objects": s3_data.get('num_object_tracks', 0),
+                "by_class": {},
+            }
+            metadata = {
+                "duration": s3_data.get('duration', 0),
+                "frames_processed": s3_data.get('frame_count', 0),
+                "processing_mode": "multimodal-newworker",
+            }
+            print(f"✓ Loaded new-worker analysis from S3 ({s3_data.get('frame_count', 0)} frames)")
+
     except Exception as e:
-        print(f"✗ Error fetching detections from S3: {e}")
-        # Fallback: try to get from DynamoDB (old videos)
+        print(f"✗ Error fetching analysis from S3: {e}")
         detections = video.get('detections', [])
         audio_analysis = video.get('audio_analysis')
         print(f"  Fallback: Got {len(detections)} detections from DynamoDB")
-    
+
     return {
         "video_id": video_id,
         "status": video.get('status'),
         "total_detections": len(detections),
         "detections": detections,
-        "audio_analysis": audio_analysis,  # ✅ NOW FROM S3!
-        "summary": video.get('summary', {}),
-        "metadata": video.get('metadata', {}),
-        "scenes": video.get('scenes', []),
-        "scene_composition": video.get('scene_composition', {}),
-        "lighting_analysis": video.get('lighting_analysis', {}),
+        "audio_analysis": audio_analysis,
+        "summary": summary,
+        "metadata": metadata,
+        "scenes": scenes,
+        "scene_composition": scene_composition,
+        "lighting_analysis": lighting_analysis,
+        # New worker fields
+        "narrative": video.get('narrative'),
+        "scene_types": video.get('scene_types', []),
+        "frame_count": video.get('frame_count'),
+        "duration": video.get('duration'),
     }
 
 @router.get("/{video_id}/status")
@@ -186,7 +200,10 @@ async def get_video_status(
         "status": video['status'],
         "updated_at": video.get('updated_at'),
         "error_message": video.get('error_message'),
-        "total_detections": video.get('summary', {}).get('total_detections', 0)
+        "total_detections": (
+            video.get('summary', {}).get('total_detections')
+            or video.get('frame_count', 0)
+        )
     }
 
 @router.delete("/{video_id}")

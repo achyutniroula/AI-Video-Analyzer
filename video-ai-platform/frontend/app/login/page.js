@@ -4,28 +4,40 @@ import { useState, useEffect } from 'react';
 import { signIn, getCurrentUser } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { GlowCard } from '@/components/ui/spotlight-card';
+import { GlassButton } from '@/components/ui/liquid-glass-button';
+
+const font = "'Manrope', sans-serif";
+
+const inputStyle = {
+  width: '100%',
+  background: 'var(--bg)',
+  border: '1px solid rgba(72,72,75,0.35)',
+  borderRadius: '4px',
+  padding: '0.875rem 1rem 0.875rem 2.75rem',
+  color: '#e7e5e8',
+  fontSize: '0.9rem',
+  fontWeight: 300,
+  outline: 'none',
+  transition: 'border-color 0.2s',
+  fontFamily: font,
+};
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true); // ADD THIS
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
 
-  // ADD THIS useEffect
-  useEffect(() => {
-    checkIfLoggedIn();
-  }, []);
+  useEffect(() => { checkIfLoggedIn(); }, []);
 
-  // ADD THIS function
   async function checkIfLoggedIn() {
     try {
       await getCurrentUser();
-      console.log('Already logged in, redirecting...');
       router.replace('/dashboard');
-    } catch (error) {
-      console.log('Not logged in');
+    } catch {
       setCheckingAuth(false);
     }
   }
@@ -34,128 +46,92 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      console.log('Attempting to sign in...');
-      const result = await signIn({ 
-        username: email, 
-        password 
-      });
-      
-      console.log('Sign in result:', result);
-      
+      const result = await signIn({ username: email, password });
       if (result.isSignedIn) {
-        console.log('Sign in successful, redirecting to dashboard...');
-        router.replace('/dashboard'); // Changed from push to replace
+        router.replace('/dashboard');
       } else {
-        console.log('Sign in incomplete:', result);
         setError('Sign in incomplete. Please try again.');
       }
     } catch (err) {
-      console.error('Sign in error:', err);
       setError(err.message || 'Failed to sign in');
     } finally {
       setLoading(false);
     }
   }
 
-  // ADD THIS: Show loading while checking
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking...</p>
-        </div>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(198,198,200,0.4)', borderTopColor: 'transparent', animation: 'spin 0.9s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-              create a new account
-            </Link>
-          </p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', fontFamily: font }}>
+
+      {/* Background ambient */}
+      <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: 500, height: 500, background: 'radial-gradient(circle, rgba(198,198,200,0.03) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      <div style={{ width: '100%', maxWidth: 420 }}>
+        {/* Wordmark */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', marginBottom: '2rem' }}>
+            <div style={{ width: 26, height: 26, background: 'linear-gradient(135deg, #c6c6c8, #454749)', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#0e0e0f', fontVariationSettings: "'FILL' 1, 'wght' 400" }}>camera</span>
+            </div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 300, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#767578' }}>Video Understanding Platform</span>
+          </div>
+          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: '2.5rem', color: '#e7e5e8', letterSpacing: '0.04em', marginBottom: '0.5rem' }}>Welcome Back</h1>
+          <p style={{ color: '#767578', fontSize: '0.875rem', fontWeight: 300, letterSpacing: '0.05em' }}>Sign in to your account</p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-800">{error}</div>
-            </div>
-          )}
+        <GlowCard className="p-8">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {error && (
+              <div style={{ background: 'rgba(238,125,119,0.06)', border: '1px solid rgba(238,125,119,0.2)', borderRadius: 4, padding: '0.75rem 1rem', color: '#ee7d77', fontSize: '0.825rem', fontWeight: 300, letterSpacing: '0.02em', fontFamily: font }}>
+                {error}
+              </div>
+            )}
 
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
+            <div style={{ position: 'relative' }}>
+              <span className="material-symbols-outlined" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: '#48484b', pointerEvents: 'none' }}>mail</span>
+              <input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
+                required disabled={loading} style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'rgba(198,198,200,0.35)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(72,72,75,0.35)'} />
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
+
+            <div style={{ position: 'relative' }}>
+              <span className="material-symbols-outlined" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: '#48484b', pointerEvents: 'none' }}>lock</span>
+              <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+                required disabled={loading} style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'rgba(198,198,200,0.35)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(72,72,75,0.35)'} />
             </div>
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                'Sign in'
-              )}
-            </button>
-          </div>
+            <div style={{ marginTop: '0.375rem' }}>
+              <GlassButton type="submit" disabled={loading} style={{ width: '100%' }}>
+                {loading ? 'Signing in...' : 'Sign In'}
+              </GlassButton>
+            </div>
+          </form>
+        </GlowCard>
 
-          <div className="text-center">
-            <Link href="/" className="text-sm text-blue-600 hover:text-blue-500">
-              Back to home
-            </Link>
-          </div>
-        </form>
+        <p style={{ textAlign: 'center', marginTop: '1.75rem', color: '#767578', fontSize: '0.85rem', fontWeight: 300, letterSpacing: '0.03em', fontFamily: font }}>
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" style={{ color: '#acaaae', fontWeight: 300 }}>Create one</Link>
+        </p>
+        <p style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+          <Link href="/" style={{ color: '#48484b', fontSize: '0.8rem', fontWeight: 300, fontFamily: font, letterSpacing: '0.05em' }}>← Back to home</Link>
+        </p>
+      </div>
+
+      {/* Footer */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '1rem 3rem', borderTop: '1px solid rgba(72,72,75,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none' }}>
+        <p style={{ color: '#2b2c2f', fontSize: '0.68rem', fontWeight: 300, letterSpacing: '0.12em', fontFamily: font }}>Developed by Achyut and Shoaib</p>
+        <p style={{ color: '#1e1f22', fontSize: '0.65rem', fontWeight: 300, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: font }}>COSC 4896</p>
       </div>
     </div>
   );

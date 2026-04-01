@@ -62,13 +62,32 @@ async def generate_narrative(video_id: str):
         video_data = response['Item']
         video_data = decimal_to_float(video_data)
         
-        # Extract metadata
+        # New worker pre-generates the narrative and stores it as a plain string
+        # in DynamoDB. Return it directly without regenerating.
+        existing_narrative = video_data.get('narrative')
+        if isinstance(existing_narrative, str) and existing_narrative:
+            print(f"✓ Returning pre-generated narrative for {video_id} (new worker)")
+            narrative_text = existing_narrative
+            return {
+                "video_id": video_id,
+                "narrative": narrative_text,
+                "key_moments": [],
+                "summary": narrative_text[:500] + '...' if len(narrative_text) > 500 else narrative_text,
+                "confidence": "high",
+                "metadata": {
+                    "detection_count": video_data.get('frame_count', 0),
+                    "has_audio": False,
+                    "duration": float(video_data.get('duration', 0) or 0),
+                },
+                "generated_at": int(datetime.now().timestamp()),
+            }
+
+        # Old worker path: generate narrative from detections
         metadata = video_data.get('metadata', {})
         summary = video_data.get('summary', {})
-        
-        # ✅ FIX: Fetch detections from S3 (not DynamoDB)
-        s3_key = f"results/{video_id}/detections.json"
-        
+
+        s3_key = video_data.get('results_s3_key') or f"results/{video_id}/detections.json"
+
         try:
             print(f"📥 Fetching detections from S3: {s3_key}")
             s3_response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
@@ -77,25 +96,21 @@ async def generate_narrative(video_id: str):
             print(f"✓ Loaded {len(detections)} detections from S3")
         except Exception as e:
             print(f"✗ Error fetching detections from S3: {e}")
-            # Fallback to DynamoDB (for old videos)
             detections = video_data.get('detections', [])
             print(f"  Fallback: Got {len(detections)} detections from DynamoDB")
-        
+
         if not detections:
             raise HTTPException(
                 status_code=400,
                 detail="No detections found for this video. Video may not have been processed yet."
             )
-        
-        # Extract audio analysis
+
         audio_analysis = video_data.get('audio_analysis', None)
-        
-        # Generate narrative using Claude (Phase 4)
+
         print(f"🤖 Generating narrative for video {video_id}...")
         print(f"  📊 Detections: {len(detections)}")
         print(f"  🎤 Audio: {'Yes' if audio_analysis else 'No'}")
-        
-        # Prepare complete video data for Phase 4 narrative
+
         complete_video_data = {
             'video_id': video_id,
             'metadata': metadata,
@@ -106,19 +121,16 @@ async def generate_narrative(video_id: str):
             'scene_composition': video_data.get('scene_composition', {}),
             'audio_analysis': audio_analysis
         }
-        
-        # Generate narrative using Phase 4 service
+
         narrative_text = generate_phase4_narrative(complete_video_data)
-        
-        # Create result structure
+
         narrative_result = {
             'narrative': narrative_text,
-            'key_moments': [],  # Can be extracted from detections if needed
+            'key_moments': [],
             'summary': narrative_text[:500] + '...' if len(narrative_text) > 500 else narrative_text,
-            'confidence': 'high'  # Phase 4 is high confidence
+            'confidence': 'high'
         }
-        
-        # Save narrative back to DynamoDB
+
         try:
             table.update_item(
                 Key={'video_id': video_id},
@@ -131,7 +143,7 @@ async def generate_narrative(video_id: str):
             print(f"✓ Narrative saved to DynamoDB")
         except Exception as e:
             print(f"⚠️  Could not save narrative to DynamoDB: {e}")
-        
+
         return {
             "video_id": video_id,
             "narrative": narrative_result['narrative'],
@@ -183,16 +195,31 @@ async def get_narrative(video_id: str):
                 status_code=404,
                 detail="No narrative generated yet"
             )
-        
+
         narrative = video_data['narrative']
-        
+
+        # New worker stores narrative as a plain string;
+        # old worker stored it as a dict.
+        if isinstance(narrative, str):
+            narrative_text = narrative
+            key_moments = []
+            summary_text = narrative[:500] + '...' if len(narrative) > 500 else narrative
+            confidence = 'high'
+            generated_at = video_data.get('processed_at')
+        else:
+            narrative_text = narrative.get('narrative', '')
+            key_moments = narrative.get('key_moments', [])
+            summary_text = narrative.get('summary', '')
+            confidence = narrative.get('confidence', 'medium')
+            generated_at = video_data.get('narrative_generated_at')
+
         return {
             "video_id": video_id,
-            "narrative": narrative.get('narrative', ''),
-            "key_moments": narrative.get('key_moments', []),
-            "summary": narrative.get('summary', ''),
-            "confidence": narrative.get('confidence', 'medium'),
-            "generated_at": video_data.get('narrative_generated_at')
+            "narrative": narrative_text,
+            "key_moments": key_moments,
+            "summary": summary_text,
+            "confidence": confidence,
+            "generated_at": generated_at,
         }
         
     except HTTPException:

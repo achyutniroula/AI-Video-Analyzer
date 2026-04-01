@@ -1,0 +1,122 @@
+# ============================================================================
+# VLM WORKER REQUIREMENTS - PHASE 1: PERCEPTION MODULES (UPDATED)
+# ============================================================================
+# Target: AWS g5.2xlarge (A10 24GB VRAM, 8 vCPU, 32GB RAM)
+# Python: 3.10+
+# CUDA: 12.1+ (for PyTorch 2.0+)
+# ============================================================================
+
+# ============================================================================
+# CORE DEEP LEARNING
+# ============================================================================
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+transformers>=4.45.0  # 4.45+ required for Qwen2-VL support
+accelerate>=0.26.0
+bitsandbytes>=0.42.0  # For 8-bit/4-bit quantization
+qwen-vl-utils>=0.0.8  # Qwen2-VL vision utilities
+
+# ============================================================================
+# TOKENIZERS & TEXT PROCESSING (Required for SigLIP and other models)
+# ============================================================================
+sentencepiece>=0.1.99  # Required for SigLIP tokenizer
+protobuf>=3.20.0       # Required for sentencepiece
+tokenizers>=0.15.0     # Fast tokenizers
+
+# ============================================================================
+# PERCEPTION MODELS
+# ============================================================================
+# SigLIP (via transformers)
+# DepthAnything V2 (via transformers)
+# Mask2Former (via transformers)
+
+# SlowFast / Action Recognition
+pytorchvideo>=0.1.5
+fvcore>=0.1.5
+
+# Audio Processing
+openai-whisper>=20231117
+panns-inference>=0.1.1
+
+# ============================================================================
+# COMPUTER VISION & MEDIA
+# ============================================================================
+opencv-python>=4.9.0
+pillow>=10.2.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# FFmpeg for audio extraction
+ffmpeg-python>=0.2.0
+
+# ============================================================================
+# SCENE GRAPH (Optional - for production MOTIFS/VCTree)
+# ============================================================================
+# scene-graph-benchmark  # Uncomment when ready for production scene graphs
+
+# ============================================================================
+# TRACKING
+# ============================================================================
+# ByteTrack dependencies
+lap>=0.4.0  # Linear assignment problem solver
+filterpy>=1.4.5  # Kalman filter
+
+# ============================================================================
+# UTILITIES
+# ============================================================================
+pyyaml>=6.0
+tqdm>=4.66.0
+dataclasses-json>=0.6.0
+
+# ============================================================================
+# TESTING & PROFILING
+# ============================================================================
+pytest>=7.4.0
+pytest-cov>=4.1.0
+memory-profiler>=0.61.0
+
+# ============================================================================
+# ADDITIONAL DEPENDENCIES (Added based on common requirements)
+# ============================================================================
+safetensors>=0.4.0     # For safe model loading
+huggingface-hub>=0.20.0  # For model downloads
+requests>=2.31.0       # HTTP requests
+regex>=2023.0.0        # Text processing
+
+# ============================================================================
+# NARRATIVE (Phase 5)
+# ============================================================================
+anthropic>=0.40.0  # Claude API for narrative generation
+python-dotenv>=1.0.0  # Load .env file
+boto3>=1.34.0          # AWS SDK (SQS, S3, etc.)
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# 1. Install PyTorch with CUDA 12.1:
+#    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+#
+# 2. Install transformers from source for latest models:
+#    pip install git+https://github.com/huggingface/transformers
+#
+# 3. For Whisper, you may need:
+#    sudo apt-get install ffmpeg  # On Ubuntu
+#
+# 4. Total installation size: ~15GB (includes model weights)
+#
+# 5. VRAM requirements (Phase 1 only):
+#    - SigLIP: 2GB
+#    - DepthAnything: 1.5GB
+#    - Mask2Former: 5.5GB
+#    - SlowFast: 3.5GB (quantized)
+#    - Whisper + PANNs: 2.5GB
+#    - Peak: 6GB (sequential execution)
+#
+# 6. Key fixes in this version:
+#    - Added sentencepiece (required for SigLIP)
+#    - Added protobuf (required for sentencepiece)
+#    - Added tokenizers (fast tokenizers)
+#    - Added safetensors (safe model loading)
+#    - Added huggingface-hub (model downloads)
+# ============================================================================

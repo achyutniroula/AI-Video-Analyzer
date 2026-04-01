@@ -1,0 +1,89 @@
+# ============================================================================
+# .dockerignore - Exclude files from Docker build context
+# ============================================================================
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# Documentation (if you want to exclude)
+docs/
+*.md
+# Uncomment if you want README in image:
+# !README.md
+
+# Test files
+tests/
+test_*.py
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Model weights (if locally stored - let Docker download from HuggingFace)
+*.bin
+*.safetensors
+*.ckpt
+*.pth
+*.pt
+# Exception: if you want to include cached models, comment out above
+
+# Data files
+*.mp4
+*.avi
+*.mov
+*.wav
+*.mp3
+
+# Docker files (don't need these inside the image)
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Deployment configs (use environment variables instead)
+*.pem
+*.key

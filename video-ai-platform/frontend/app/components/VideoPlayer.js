@@ -3,199 +3,143 @@
 import { useEffect, useRef, useState } from 'react';
 import { getVideoUrl } from '../lib/api';
 
+const font = "'Manrope', sans-serif";
+
+function getColorForClass(className) {
+  const colors = { person: '#c6c6c8', car: '#9adbc8', truck: '#87ceeb', bus: '#dda0dd', motorcycle: '#f0e68c', bicycle: '#98d8c8', dog: '#f4a460', cat: '#87ceeb' };
+  if (colors[className]) return colors[className];
+  let hash = 0;
+  for (let i = 0; i < className.length; i++) hash = className.charCodeAt(i) + ((hash << 5) - hash);
+  return `hsl(${Math.abs(hash) % 360}, 35%, 72%)`;
+}
+
 export default function VideoPlayer({ video }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const animationFrameRef = useRef(null);
-  
+  const progressRef = useRef(null);
+
   const [videoUrl, setVideoUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [currentDetections, setCurrentDetections] = useState([]);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isSeeking, setIsSeeking] = useState(false);
 
-  // Load video URL when component mounts
-  useEffect(() => {
-    loadVideoUrl();
-  }, [video.video_id]);
+  useEffect(() => { loadVideoUrl(); }, [video.video_id]);
 
   async function loadVideoUrl() {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('Fetching video URL for:', video.video_id);
       const url = await getVideoUrl(video.video_id);
-      console.log('✓ Got video URL');
-      
       setVideoUrl(url);
     } catch (err) {
-      console.error('Error loading video URL:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   }
 
-  // Initialize video and canvas when URL loads
   useEffect(() => {
     if (!videoUrl || !videoRef.current || !canvasRef.current) return;
-
-    const videoElement = videoRef.current;
+    const el = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Set canvas size to match video
-    videoElement.addEventListener('loadedmetadata', () => {
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
-      console.log('✓ Video loaded:', canvas.width, 'x', canvas.height);
-    });
+    const onMeta = () => {
+      canvas.width = el.videoWidth;
+      canvas.height = el.videoHeight;
+      setDuration(el.duration || 0);
+    };
 
-    // Update current frame and detections as video plays
-    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    el.addEventListener('loadedmetadata', onMeta);
+    el.addEventListener('timeupdate', handleTimeUpdate);
+    el.addEventListener('durationchange', () => setDuration(el.duration || 0));
 
     return () => {
-      videoElement.removeEventListener('timeupdate', handleTimeUpdate);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+      el.removeEventListener('loadedmetadata', onMeta);
+      el.removeEventListener('timeupdate', handleTimeUpdate);
     };
   }, [videoUrl, video.detections]);
 
-  // Set playback speed
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = playbackSpeed;
-    }
+    if (videoRef.current) videoRef.current.playbackRate = playbackSpeed;
   }, [playbackSpeed]);
 
   function handleTimeUpdate() {
     if (!videoRef.current) return;
-
-    const videoElement = videoRef.current;
+    const el = videoRef.current;
     const fps = video.metadata?.fps || 25;
-    const currentFrameNum = Math.floor(videoElement.currentTime * fps);
-    
-    setCurrentFrame(currentFrameNum);
-    
-    // Find detections for current frame
-    const detections = video.detections?.filter(
-      d => d.frame === currentFrameNum
-    ) || [];
-    
-    setCurrentDetections(detections);
-    
-    // Draw bounding boxes
-    drawBoundingBoxes(detections);
+    const frame = Math.floor(el.currentTime * fps);
+    setCurrentTime(el.currentTime);
+    setCurrentFrame(frame);
+    const dets = video.detections?.filter(d => d.frame === frame) || [];
+    setCurrentDetections(dets);
+    drawBoundingBoxes(dets);
   }
 
   function drawBoundingBoxes(detections) {
     const canvas = canvasRef.current;
-    const video = videoRef.current;
-    
-    if (!canvas || !video) return;
-
+    const el = videoRef.current;
+    if (!canvas || !el) return;
     const ctx = canvas.getContext('2d');
-    
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw each detection
-    detections.forEach(detection => {
-      const bbox = detection.bbox;
-      const width = bbox.x2 - bbox.x1;
-      const height = bbox.y2 - bbox.y1;
-      
-      // Generate color based on class name
-      const color = getColorForClass(detection.class_name);
-      
-      // Draw bounding box
+    detections.forEach(d => {
+      const b = d.bbox;
+      const w = b.x2 - b.x1;
+      const h = b.y2 - b.y1;
+      const color = getColorForClass(d.class_name);
       ctx.strokeStyle = color;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(bbox.x1, bbox.y1, width, height);
-      
-      // Draw label background
-      const label = `${detection.class_name} ${(detection.confidence * 100).toFixed(1)}%`;
-      ctx.font = 'bold 16px Arial';
-      const textWidth = ctx.measureText(label).width;
-      const textHeight = 20;
-      
-      ctx.fillStyle = color;
-      ctx.fillRect(bbox.x1, bbox.y1 - textHeight - 4, textWidth + 10, textHeight + 4);
-      
-      // Draw label text
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(label, bbox.x1 + 5, bbox.y1 - 8);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(b.x1, b.y1, w, h);
+      const label = `${d.class_name} ${(d.confidence * 100).toFixed(0)}%`;
+      ctx.font = '300 12px Manrope, sans-serif';
+      const tw = ctx.measureText(label).width;
+      ctx.fillStyle = color + 'bb';
+      ctx.fillRect(b.x1, b.y1 - 18, tw + 8, 18);
+      ctx.fillStyle = '#111';
+      ctx.fillText(label, b.x1 + 4, b.y1 - 5);
     });
-  }
-
-  function getColorForClass(className) {
-    // Generate consistent color for each class
-    const colors = {
-      'person': '#FF6B6B',
-      'car': '#4ECDC4',
-      'truck': '#45B7D1',
-      'bus': '#FFA07A',
-      'motorcycle': '#98D8C8',
-      'bicycle': '#F7DC6F',
-      'dog': '#BB8FCE',
-      'cat': '#85C1E2',
-    };
-    
-    // Return predefined color or generate one
-    if (colors[className]) {
-      return colors[className];
-    }
-    
-    // Generate color from class name
-    let hash = 0;
-    for (let i = 0; i < className.length; i++) {
-      hash = className.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = hash % 360;
-    return `hsl(${hue}, 70%, 60%)`;
   }
 
   function togglePlay() {
     if (!videoRef.current) return;
-
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
+    if (isPlaying) { videoRef.current.pause(); setIsPlaying(false); }
+    else { videoRef.current.play(); setIsPlaying(true); }
   }
 
-  function seekFrame(direction) {
+  function seekFrame(dir) {
     if (!videoRef.current) return;
-
     const fps = video.metadata?.fps || 25;
-    const frameDuration = 1 / fps;
-    
-    videoRef.current.currentTime += direction * frameDuration;
+    videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime + dir * (1 / fps));
   }
 
-  function handleSeek(e) {
-    if (!videoRef.current) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    
-    videoRef.current.currentTime = percentage * videoRef.current.duration;
+  function handleProgressClick(e) {
+    if (!videoRef.current || !progressRef.current) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    videoRef.current.currentTime = pct * (videoRef.current.duration || 0);
   }
+
+  function formatTime(s) {
+    if (!s || isNaN(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const speeds = [0.25, 0.5, 1, 1.5, 2];
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <div className="flex justify-center items-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading video...</p>
-          </div>
+      <div style={{ background: '#000', borderRadius: 6, overflow: 'hidden', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid rgba(198,198,200,0.4)', borderTopColor: 'transparent', animation: 'spin 0.9s linear infinite', margin: '0 auto 0.75rem' }} />
+          <p style={{ color: '#767578', fontSize: '0.78rem', fontFamily: font, fontWeight: 300, letterSpacing: '0.06em' }}>Loading video...</p>
         </div>
       </div>
     );
@@ -203,169 +147,126 @@ export default function VideoPlayer({ video }) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Video</h3>
-          <p className="text-red-600">{error}</p>
-          <button
-            onClick={loadVideoUrl}
-            className="mt-4 text-red-600 hover:text-red-800 underline"
-          >
-            Try Again
-          </button>
-        </div>
+      <div style={{ background: 'var(--surface-low)', border: '1px solid rgba(238,125,119,0.18)', borderRadius: 6, padding: '2.5rem', textAlign: 'center' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 32, color: 'var(--error)', display: 'block', marginBottom: '0.75rem' }}>error_outline</span>
+        <p style={{ color: 'var(--error)', fontSize: '0.825rem', fontFamily: font, fontWeight: 300, marginBottom: '1.25rem' }}>{error}</p>
+        <button onClick={loadVideoUrl} style={{ color: 'var(--on-muted)', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 4, padding: '0.4rem 1.25rem', cursor: 'pointer', fontSize: '0.72rem', fontFamily: font, fontWeight: 300, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Retry</button>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Video Playback with Detections</h2>
-      
-      <div className="space-y-4">
-        {/* Video Container */}
-        <div className="relative bg-black rounded-lg overflow-hidden">
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            className="w-full"
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-          />
-          <canvas
-            ref={canvasRef}
-            className="absolute top-0 left-0 w-full h-full pointer-events-none"
-          />
-        </div>
+    <div style={{ fontFamily: font }}>
 
-        {/* Controls */}
-        <div className="space-y-3">
-          {/* Playback Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {/* Previous Frame */}
-              <button
-                onClick={() => seekFrame(-1)}
-                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
-                title="Previous Frame"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
-              {/* Play/Pause */}
-              <button
-                onClick={togglePlay}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
-              >
-                {isPlaying ? (
-                  <span className="flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Pause
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Play
-                  </span>
-                )}
-              </button>
-
-              {/* Next Frame */}
-              <button
-                onClick={() => seekFrame(1)}
-                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
-                title="Next Frame"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Speed Control */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Speed:</span>
-              <select
-                value={playbackSpeed}
-                onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                className="px-3 py-1 border border-gray-300 rounded-lg text-sm"
-              >
-                <option value="0.25">0.25x</option>
-                <option value="0.5">0.5x</option>
-                <option value="1">1x</option>
-                <option value="1.5">1.5x</option>
-                <option value="2">2x</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div
-            className="relative h-2 bg-gray-200 rounded-full cursor-pointer"
-            onClick={handleSeek}
-          >
-            <div
-              className="absolute h-full bg-blue-600 rounded-full"
-              style={{
-                width: videoRef.current
-                  ? `${(videoRef.current.currentTime / videoRef.current.duration) * 100}%`
-                  : '0%'
-              }}
-            />
-          </div>
-
-          {/* Frame Info */}
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>
-              Frame: {currentFrame} / {video.metadata?.total_frames || 0}
-            </div>
-            <div>
-              Time: {videoRef.current?.currentTime?.toFixed(2) || 0}s / {video.metadata?.duration?.toFixed(2) || 0}s
-            </div>
-          </div>
-        </div>
-
-        {/* Current Detections */}
-        {currentDetections.length > 0 && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">
-              Current Frame Detections ({currentDetections.length})
-            </h3>
-            <div className="space-y-1">
-              {currentDetections.map((detection, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <div className="flex items-center">
-                    <div
-                      className="w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: getColorForClass(detection.class_name) }}
-                    />
-                    <span className="font-medium capitalize">{detection.class_name}</span>
-                  </div>
-                  <span className="text-gray-600">
-                    {(detection.confidence * 100).toFixed(1)}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {currentDetections.length === 0 && (
-          <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500 text-sm">
-            No detections in current frame
-          </div>
-        )}
+      {/* Video */}
+      <div style={{ position: 'relative', background: '#000', borderRadius: '6px 6px 0 0', overflow: 'hidden', lineHeight: 0 }}>
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          style={{ width: '100%', display: 'block' }}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
+        />
+        <canvas
+          ref={canvasRef}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+        />
       </div>
+
+      {/* Controls */}
+      <div style={{ background: 'var(--ctrl-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '0 0 6px 6px', padding: '0.75rem 1.125rem', border: '1px solid var(--outline-faint)', borderTop: 'none' }}>
+
+        {/* Progress bar */}
+        <div
+          ref={progressRef}
+          onClick={handleProgressClick}
+          style={{ height: 3, background: 'rgba(72,72,75,0.45)', borderRadius: 2, cursor: 'pointer', marginBottom: '0.75rem', position: 'relative' }}
+        >
+          <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg, #454749, #c6c6c8)', borderRadius: 2 }} />
+          <div style={{ position: 'absolute', top: '50%', left: `${progress}%`, transform: 'translate(-50%, -50%)', width: 9, height: 9, borderRadius: '50%', background: '#c6c6c8', boxShadow: '0 0 5px rgba(198,198,200,0.6)', transition: 'left 0.1s linear' }} />
+        </div>
+
+        {/* Buttons row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+
+          {/* Playback */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button onClick={() => seekFrame(-1)} style={ctrlBtn} onMouseEnter={e => hoverOn(e)} onMouseLeave={e => hoverOff(e)}>
+              <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#767578' }}>skip_previous</span>
+            </button>
+            <button onClick={togglePlay} style={playBtn} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(198,198,200,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(198,198,200,0.1)'; }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22, color: '#e7e5e8', fontVariationSettings: "'FILL' 1, 'wght' 400" }}>{isPlaying ? 'pause' : 'play_arrow'}</span>
+            </button>
+            <button onClick={() => seekFrame(1)} style={ctrlBtn} onMouseEnter={e => hoverOn(e)} onMouseLeave={e => hoverOff(e)}>
+              <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#767578' }}>skip_next</span>
+            </button>
+          </div>
+
+          {/* Time */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#767578', fontSize: '0.72rem', fontFamily: 'monospace' }}>
+            <span style={{ color: '#b8b9bb' }}>{formatTime(currentTime)}</span>
+            <span style={{ color: '#2b2c2f' }}>/</span>
+            <span>{formatTime(duration)}</span>
+            <span style={{ color: '#2b2c2f', marginLeft: '0.5rem', fontFamily: font, fontSize: '0.65rem', letterSpacing: '0.05em' }}>F{currentFrame}</span>
+          </div>
+
+          {/* Speed */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            {speeds.map(s => (
+              <button key={s} onClick={() => setPlaybackSpeed(s)} style={{
+                padding: '0.18rem 0.4rem', borderRadius: 3,
+                background: playbackSpeed === s ? 'rgba(198,198,200,0.14)' : 'transparent',
+                border: playbackSpeed === s ? '1px solid rgba(198,198,200,0.22)' : '1px solid transparent',
+                color: playbackSpeed === s ? '#b8b9bb' : '#48484b',
+                fontSize: '0.65rem', fontFamily: font, fontWeight: 300,
+                cursor: 'pointer', letterSpacing: '0.03em',
+                transition: 'all 0.15s',
+              }}>
+                {s}×
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Frame detections */}
+      {currentDetections.length > 0 && (
+        <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 6, backdropFilter: 'blur(12px)' }}>
+          <p style={{ fontSize: '0.6rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--outline-dim)', marginBottom: '0.5rem', fontFamily: font }}>
+            Frame {currentFrame} · {currentDetections.length} detection{currentDetections.length !== 1 ? 's' : ''}
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+            {currentDetections.map((d, i) => (
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 3, padding: '0.18rem 0.55rem', fontSize: '0.7rem', color: 'var(--on-muted)', fontFamily: font, fontWeight: 300 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: getColorForClass(d.class_name), display: 'inline-block', flexShrink: 0 }} />
+                {d.class_name} {(d.confidence * 100).toFixed(0)}%
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+const ctrlBtn = {
+  width: 30, height: 30, borderRadius: 4,
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(72,72,75,0.3)',
+  cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  transition: 'all 0.15s',
+};
+
+const playBtn = {
+  width: 38, height: 38, borderRadius: 6,
+  background: 'rgba(198,198,200,0.1)',
+  border: '1px solid rgba(198,198,200,0.2)',
+  cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  transition: 'all 0.2s',
+};
+
+function hoverOn(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }
+function hoverOff(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }
