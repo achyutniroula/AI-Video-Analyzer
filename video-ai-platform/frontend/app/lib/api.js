@@ -169,9 +169,93 @@ export async function deleteVideo(videoId) {
 }
 
 /**
+ * Rename a video (set display_name)
+ */
+export async function renameVideo(videoId, displayName) {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/videos/${videoId}/rename`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ display_name: displayName }),
+  });
+  if (!response.ok) throw new Error(`Rename failed: ${response.status}`);
+  return response.json();
+}
+
+/**
+ * Get presigned thumbnail URL for a video.
+ * If no thumbnail exists yet, triggers on-demand generation from the source video.
+ */
+export async function getThumbnailUrl(videoId) {
+  const token = await getAuthToken();
+
+  // 1. Try existing thumbnail
+  const response = await fetch(`${API_BASE_URL}/videos/${videoId}/thumbnail`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (response.ok) {
+    const data = await response.json();
+    return data.thumbnail_url;
+  }
+
+  // 2. If not found, generate on-demand (ffmpeg streams from S3 presigned URL)
+  if (response.status === 404) {
+    try {
+      const genResponse = await fetch(`${API_BASE_URL}/videos/${videoId}/thumbnail/generate`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (genResponse.ok) {
+        const data = await genResponse.json();
+        return data.thumbnail_url;
+      }
+    } catch {
+      // generation failed — return null so the placeholder icon shows
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get the full raw worker stdout log for a video (saved to S3 during processing)
+ */
+export async function getVideoRawLog(videoId) {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/videos/${videoId}/raw-log`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.log || null;
+}
+
+/**
+ * Get processing logs for a specific video
+ */
+export async function getVideoLogs(videoId) {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/videos/${videoId}/logs`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error(`Failed to fetch logs: ${response.status}`);
+  return response.json();
+}
+
+/**
+ * Get processing logs for all videos (system status)
+ */
+export async function getSystemLogs() {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/videos/system/logs`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error(`Failed to fetch system logs: ${response.status}`);
+  return response.json();
+}
+
+/**
  * Get presigned URL for video playback
- * 
- * Add this to your app/lib/api.js file
  */
 export async function getVideoUrl(videoId) {
   try {

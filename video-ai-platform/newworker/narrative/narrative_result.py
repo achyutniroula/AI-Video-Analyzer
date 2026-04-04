@@ -24,6 +24,9 @@ class NarrativeResult:
     output_tokens: int
     processing_time: float      # seconds
 
+    # ── optional summary ──────────────────────────────────────────────
+    summary: str = ""           # 1-2 sentence executive summary
+
     # ── metadata ──────────────────────────────────────────────────────
     metadata: Dict[str, Any] = field(default_factory=dict)
 

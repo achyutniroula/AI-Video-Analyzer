@@ -95,6 +95,39 @@ class DBHandler:
             return False
 
     # ─────────────────────────────────────────────────────────────────
+    #  Thumbnail
+    # ─────────────────────────────────────────────────────────────────
+
+    def save_raw_log_key(self, video_id: str, log_s3_key: str) -> bool:
+        """Store the S3 key of the raw worker stdout log file."""
+        try:
+            self.table.update_item(
+                Key={"video_id": video_id},
+                UpdateExpression="SET raw_log_s3_key = :key",
+                ExpressionAttributeValues={":key": log_s3_key},
+            )
+            return True
+        except ClientError as e:
+            print(f"Failed to save raw log key: {e}")
+            return False
+
+    def save_thumbnail_key(self, video_id: str, thumbnail_s3_key: str) -> bool:
+        """Store the S3 key of the generated thumbnail in DynamoDB."""
+        try:
+            self.table.update_item(
+                Key={"video_id": video_id},
+                UpdateExpression="SET thumbnail_s3_key = :key, updated_at = :ts",
+                ExpressionAttributeValues={
+                    ":key": thumbnail_s3_key,
+                    ":ts": _now(),
+                },
+            )
+            return True
+        except ClientError as e:
+            print(f"Failed to save thumbnail key: {e}")
+            return False
+
+    # ─────────────────────────────────────────────────────────────────
     #  Save narrative result
     # ─────────────────────────────────────────────────────────────────
 
@@ -103,6 +136,7 @@ class DBHandler:
         video_id: str,
         video_result: "VideoResult",  # type: ignore[name-defined]
         results_s3_key: str,
+        processing_logs: list = None,
     ) -> bool:
         """
         Save a summary of the completed VideoResult to DynamoDB.
@@ -114,31 +148,40 @@ class DBHandler:
         try:
             d = video_result.to_dict()
 
+            update_expr = (
+                "SET #status = :status, "
+                "updated_at = :updated_at, "
+                "processed_at = :processed_at, "
+                "narrative = :narrative, "
+                "narrative_summary = :narrative_summary, "
+                "frame_count = :frame_count, "
+                "#duration = :duration, "
+                "scene_types = :scene_types, "
+                "processing_time = :processing_time, "
+                "results_s3_key = :results_s3_key"
+            )
+            expr_values = {
+                ":status": "completed",
+                ":updated_at": _now(),
+                ":processed_at": _now(),
+                ":narrative": d["narrative"],
+                ":narrative_summary": d.get("narrative_summary", ""),
+                ":frame_count": d["frame_count"],
+                ":duration": str(d["duration"]),
+                ":scene_types": d["scene_types"],
+                ":processing_time": str(d["total_processing_time"]),
+                ":results_s3_key": results_s3_key,
+            }
+
+            if processing_logs:
+                update_expr += ", processing_logs = :logs"
+                expr_values[":logs"] = processing_logs[-30:]  # cap at 30 entries
+
             self.table.update_item(
                 Key={"video_id": video_id},
-                UpdateExpression=(
-                    "SET #status = :status, "
-                    "updated_at = :updated_at, "
-                    "processed_at = :processed_at, "
-                    "narrative = :narrative, "
-                    "frame_count = :frame_count, "
-                    "#duration = :duration, "
-                    "scene_types = :scene_types, "
-                    "processing_time = :processing_time, "
-                    "results_s3_key = :results_s3_key"
-                ),
+                UpdateExpression=update_expr,
                 ExpressionAttributeNames={"#status": "status", "#duration": "duration"},
-                ExpressionAttributeValues={
-                    ":status": "completed",
-                    ":updated_at": _now(),
-                    ":processed_at": _now(),
-                    ":narrative": d["narrative"],
-                    ":frame_count": d["frame_count"],
-                    ":duration": str(d["duration"]),        # DynamoDB requires Decimal/str for floats
-                    ":scene_types": d["scene_types"],
-                    ":processing_time": str(d["total_processing_time"]),
-                    ":results_s3_key": results_s3_key,
-                },
+                ExpressionAttributeValues=expr_values,
             )
             print(f"Saved narrative result for {video_id}")
             return True

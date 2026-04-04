@@ -51,6 +51,11 @@ Rules:
 - If audio events or speech are present, weave them into the narrative naturally.
 - End with a brief "Throughout:" sentence describing any constant elements.
 - Be concise but informative. Target 200–400 words.
+
+After the narrative, append exactly this block (no blank line before SUMMARY:):
+
+SUMMARY:
+[1–2 sentences capturing the scene, main subjects, and overall context of the video.]
 """
 
 
@@ -110,11 +115,12 @@ class NarrativeGenerator:
         prompt   = self._build_prompt(frame_results, assembly)
 
         t0 = time.time()
-        narrative_text, in_tok, out_tok = self._call_claude(prompt)
+        narrative_text, summary_text, in_tok, out_tok = self._call_claude(prompt)
         elapsed = time.time() - t0
 
         return NarrativeResult(
             narrative=narrative_text,
+            summary=summary_text,
             video_duration=assembly.video_duration,
             frame_count=assembly.frame_count,
             model=self.model,
@@ -218,7 +224,7 @@ class NarrativeGenerator:
     # ─────────────────────────────────────────────────────────────────
 
     def _call_claude(self, prompt: str):
-        """Call Claude API and return (narrative_text, input_tokens, output_tokens)."""
+        """Call Claude API and return (narrative_text, summary_text, input_tokens, output_tokens)."""
         import anthropic
 
         client = anthropic.Anthropic(api_key=self._api_key)
@@ -229,7 +235,21 @@ class NarrativeGenerator:
             messages=[{"role": "user", "content": prompt}],
         )
 
-        narrative = response.content[0].text.strip()
+        full_text = response.content[0].text.strip()
         in_tok    = response.usage.input_tokens
         out_tok   = response.usage.output_tokens
-        return narrative, in_tok, out_tok
+
+        # Split narrative and summary
+        if "\nSUMMARY:\n" in full_text:
+            parts = full_text.split("\nSUMMARY:\n", 1)
+            narrative = parts[0].strip()
+            summary   = parts[1].strip()
+        elif "\nSUMMARY:" in full_text:
+            parts = full_text.split("\nSUMMARY:", 1)
+            narrative = parts[0].strip()
+            summary   = parts[1].strip()
+        else:
+            narrative = full_text
+            summary   = ""
+
+        return narrative, summary, in_tok, out_tok

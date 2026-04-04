@@ -10,6 +10,7 @@ export default function VideoNarrative({ videoId }) {
   const [narrative, setNarrative] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showFull, setShowFull] = useState(false);
 
   useEffect(() => { fetchExistingNarrative(); }, [videoId]);
 
@@ -83,24 +84,48 @@ export default function VideoNarrative({ videoId }) {
       {/* Narrative content */}
       {narrative && !loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Main narrative */}
-          <div style={{ padding: '1.75rem 2rem', background: 'rgba(198,198,200,0.02)', borderRadius: 8, border: '1px solid rgba(72,72,75,0.2)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-              <div style={{ width: 2, height: 18, background: 'linear-gradient(180deg, var(--primary), var(--outline))', borderRadius: 2 }} />
-              <span style={{ color: 'var(--outline)', fontSize: '0.68rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.18em', fontFamily: font }}>Full Narrative</span>
-            </div>
-            <p style={{ color: 'var(--on-muted)', lineHeight: 1.9, fontSize: '0.95rem', fontFamily: font, fontWeight: 300 }}>
-              {narrative.narrative}
-            </p>
-          </div>
 
-          {/* Summary */}
-          {narrative.summary && (
-            <div style={{ padding: '1.5rem 2rem', background: 'rgba(198,198,200,0.02)', borderRadius: 8, border: '1px solid rgba(72,72,75,0.2)' }}>
-              <p style={{ color: 'var(--outline-dim)', fontSize: '0.62rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem', fontFamily: font }}>Summary</p>
-              <p style={{ color: 'var(--on-muted)', lineHeight: 1.8, fontSize: '0.9rem', fontFamily: font, fontWeight: 300 }}>{narrative.summary}</p>
+          {/* Full Narrative + Summary — side by side */}
+          <div style={{ display: 'grid', gridTemplateColumns: narrative.summary ? '1fr 1fr' : '1fr', gap: '1.25rem', alignItems: 'start' }}>
+            {/* Full Narrative */}
+            <div style={{ padding: '1.75rem 2rem', background: 'rgba(198,198,200,0.02)', borderRadius: 8, border: '1px solid rgba(72,72,75,0.2)', height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <div style={{ width: 2, height: 16, background: 'linear-gradient(180deg, var(--primary), var(--outline))', borderRadius: 2, flexShrink: 0 }} />
+                <span style={{ color: 'var(--outline)', fontSize: '0.62rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.2em', fontFamily: font }}>Full Narrative</span>
+              </div>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <p style={{
+                  color: 'var(--on-muted)', lineHeight: 1.9, fontSize: '0.9rem', fontFamily: font, fontWeight: 300,
+                  ...(showFull ? {} : { display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }),
+                }}>
+                  {narrative.narrative}
+                </p>
+                {!showFull && (
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 48, background: 'linear-gradient(to bottom, transparent, rgba(14,14,15,0.85))', pointerEvents: 'none' }} />
+                )}
+              </div>
+              <button
+                onClick={() => setShowFull(v => !v)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--outline)', fontSize: '0.68rem', fontWeight: 300, fontFamily: font, letterSpacing: '0.12em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.875rem 0 0', marginTop: 'auto', alignSelf: 'flex-start', transition: 'color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--on-muted)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--outline)'}
+              >
+                {showFull ? 'See Less' : 'See More'}
+                <span className="material-symbols-outlined" style={{ fontSize: 14, transition: 'transform 0.3s cubic-bezier(0.2,0,0,1)', transform: showFull ? 'rotate(180deg)' : 'rotate(0deg)', fontVariationSettings: "'FILL' 0, 'wght' 300" }}>expand_more</span>
+              </button>
             </div>
-          )}
+
+            {/* Summary */}
+            {narrative.summary && (
+              <div style={{ padding: '1.75rem 2rem', background: 'rgba(198,198,200,0.02)', borderRadius: 8, border: '1px solid rgba(72,72,75,0.2)', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                  <div style={{ width: 2, height: 16, background: 'linear-gradient(180deg, var(--primary), var(--outline))', borderRadius: 2, flexShrink: 0 }} />
+                  <span style={{ color: 'var(--outline)', fontSize: '0.62rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.2em', fontFamily: font }}>Summary</span>
+                </div>
+                <p style={{ color: 'var(--on-muted)', lineHeight: 1.9, fontSize: '0.9rem', fontFamily: font, fontWeight: 300 }}>{narrative.summary}</p>
+              </div>
+            )}
+          </div>
 
           {/* Key Moments */}
           {narrative.key_moments && narrative.key_moments.length > 0 && (

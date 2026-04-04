@@ -42,6 +42,71 @@ function MetaItem({ icon, label, value }) {
   );
 }
 
+function PerceptionLayer({ video, detections }) {
+  const frames = video.metadata?.frames_processed || video.frame_count;
+  const tracked = video.summary?.unique_tracked_objects;
+  const sceneCount = video.scenes?.length || video.scene_types?.length;
+  const compositionKeys = video.scene_composition ? Object.keys(video.scene_composition).length : 0;
+
+  const models = [
+    {
+      name: 'SigLIP',
+      role: 'Semantic classification',
+      detail: sceneCount ? `${sceneCount} scene type${sceneCount !== 1 ? 's' : ''} identified` : 'Visual embeddings encoded',
+      icon: 'image_search',
+    },
+    {
+      name: 'DepthAnything V2',
+      role: 'Monocular depth estimation',
+      detail: frames ? `Depth maps for ${frames} frames` : 'Depth maps generated',
+      icon: 'landscape',
+    },
+    {
+      name: 'Mask2Former',
+      role: 'Panoptic segmentation',
+      detail: detections.length > 0 ? `${detections.length} detections segmented` : 'Scene masks computed',
+      icon: 'shape_line',
+    },
+    {
+      name: 'SceneGraph',
+      role: 'Spatial relationship modeling',
+      detail: compositionKeys > 0 ? `${compositionKeys} composition features mapped` : 'Object relationships modeled',
+      icon: 'hub',
+    },
+    {
+      name: 'SlowFast R50',
+      role: 'Action recognition',
+      detail: frames ? `Motion dynamics across ${frames} frames` : 'Temporal patterns analyzed',
+      icon: 'play_circle',
+    },
+    {
+      name: 'ByteTrack',
+      role: 'Multi-object tracking',
+      detail: tracked != null ? `${tracked} unique object${tracked !== 1 ? 's' : ''} tracked` : 'Object trajectories computed',
+      icon: 'track_changes',
+    },
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+      {models.map((m, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem', padding: '0.875rem 1rem', background: 'rgba(198,198,200,0.02)', border: '1px solid rgba(72,72,75,0.12)', borderRadius: 6 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 6, background: 'rgba(72,72,75,0.12)', border: '1px solid rgba(72,72,75,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 15, color: 'var(--outline)', fontVariationSettings: "'FILL' 0, 'wght' 300" }}>{m.icon}</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+              <span style={{ color: 'var(--on-muted)', fontSize: '0.8rem', fontWeight: 300, fontFamily: font }}>{m.name}</span>
+              <span style={{ color: 'var(--outline-dim)', fontSize: '0.62rem', fontWeight: 300, fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{m.role}</span>
+            </div>
+            <span style={{ color: 'var(--outline)', fontSize: '0.75rem', fontWeight: 300, fontFamily: font }}>{m.detail}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SectionLabel({ children }) {
   return (
     <p style={{ fontSize: '0.62rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--outline-dim)', marginBottom: '1.25rem', fontFamily: font }}>
@@ -57,7 +122,7 @@ export default function VideoDetailPage() {
 
   const [video, setVideo] = useState(null);
   const [detections, setDetections] = useState([]);
-  const [audioAnalysis, setAudioAnalysis] = useState(null);
+  const [audioAnalysis, setAudioAnalysis] = useState(undefined); // undefined = not yet fetched; null = fetched but empty
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -93,7 +158,8 @@ export default function VideoDetailPage() {
         });
         if (detectionsRes.ok) {
           const detectionsData = await detectionsRes.json();
-          if (detectionsData.audio_analysis) setAudioAnalysis(detectionsData.audio_analysis);
+          // Set audio analysis — even null so the section always renders
+          setAudioAnalysis(detectionsData.audio_analysis ?? null);
           setDetections(detectionsData.detections || []);
           if (!data.summary && detectionsData.detections?.length > 0) data.summary = calculateSummary(detectionsData.detections);
           if (!data.metadata && detectionsData.metadata) data.metadata = detectionsData.metadata;
@@ -177,12 +243,15 @@ export default function VideoDetailPage() {
 
         {/* Title + Status */}
         <div style={{ marginBottom: '2.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-            <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(1.4rem, 3vw, 2rem)', color: '#e7e5e8', letterSpacing: '0.02em', fontFamily: 'monospace', fontSize: '1.1rem', color: '#acaaae' }}>
-              {videoId}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.375rem' }}>
+            <h1 style={{ fontFamily: font, fontWeight: 300, fontSize: '1.25rem', color: 'var(--on-surface)', letterSpacing: '0.02em' }}>
+              {video.display_name || videoId}
             </h1>
             <StatusBadge status={video.status} />
           </div>
+          {video.display_name && video.display_name !== videoId && (
+            <p style={{ color: 'var(--outline-dim)', fontSize: '0.72rem', fontFamily: 'monospace', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>{videoId}</p>
+          )}
           <p style={{ color: '#48484b', fontSize: '0.78rem', fontFamily: font, fontWeight: 300, letterSpacing: '0.05em' }}>Uploaded {formatDate(video.created_at)}</p>
         </div>
 
@@ -200,8 +269,8 @@ export default function VideoDetailPage() {
           </GlowCard>
         )}
 
-        {/* Main two-column layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: '1.5rem', marginBottom: '1.5rem', alignItems: 'start' }}>
+        {/* Video player */}
+        <div style={{ marginBottom: '1.5rem' }}>
 
           {/* Video Player */}
           <GlowCard style={{ overflow: 'hidden' }}>
@@ -213,44 +282,192 @@ export default function VideoDetailPage() {
             </div>
           </GlowCard>
 
-          {/* Top Detections */}
-          <GlowCard style={{ padding: '1.75rem 2rem' }}>
-            <SectionLabel>Top Detections</SectionLabel>
-            {topObjects.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {topObjects.map(({ className, count }, i) => {
-                  const max = topObjects[0].count;
-                  const pct = Math.round((count / max) * 100);
-                  return (
-                    <div key={i}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
-                        <span style={{ color: 'var(--on-muted)', fontSize: '0.825rem', fontWeight: 300, textTransform: 'capitalize', fontFamily: font }}>{className}</span>
-                        <span style={{ color: 'var(--outline)', fontSize: '0.825rem', fontWeight: 300, fontFamily: font }}>{count}</span>
-                      </div>
-                      <div style={{ height: 2, background: 'rgba(72,72,75,0.25)', borderRadius: 1 }}>
-                        <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, #454749, #c6c6c8)`, borderRadius: 1, opacity: 1 - i * 0.15 }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p style={{ color: '#48484b', fontSize: '0.875rem', fontFamily: font, fontWeight: 300 }}>No detections yet.</p>
-            )}
-
-            {video.summary?.unique_tracked_objects !== undefined && (
-              <div style={{ marginTop: '1.75rem', paddingTop: '1.375rem', borderTop: '1px solid rgba(72,72,75,0.15)' }}>
-                <MetaItem icon="category" label="Unique Classes" value={video.summary.unique_tracked_objects} />
-              </div>
-            )}
-          </GlowCard>
         </div>
 
-        {/* AI Narrative */}
+        {/* AI Narrative — full width */}
         <GlowCard style={{ marginBottom: '1.5rem', padding: '2rem 2.25rem' }}>
           <SectionLabel>AI Narrative</SectionLabel>
           <VideoNarrative videoId={videoId} />
         </GlowCard>
+
+        {/* Audio Narrative — always rendered once detections have loaded */}
+        {audioAnalysis !== undefined && (
+          <GlowCard style={{ marginBottom: '1.5rem', padding: '2rem 2.25rem' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--outline)', fontVariationSettings: "'FILL' 0, 'wght' 300" }}>graphic_eq</span>
+                <h2 style={{ fontFamily: font, fontWeight: 300, fontSize: '1rem', color: 'var(--on-surface)', letterSpacing: '0.04em' }}>Audio Narrative</h2>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {[
+                  { label: 'Whisper large-v3', icon: 'mic', desc: 'OpenAI Whisper large-v3 — high-accuracy speech recognition' },
+                  { label: 'HTS-AT', icon: 'surround_sound', desc: 'Hierarchical Token-Semantic Audio Transformer — environmental sound classification' },
+                  { label: 'Chromaprint', icon: 'music_note', desc: 'Chromaprint + AcoustID — acoustic fingerprinting for music identification' },
+                ].map(src => (
+                  <span key={src.label} title={src.desc} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                    background: 'rgba(198,198,200,0.04)', border: '1px solid rgba(72,72,75,0.2)',
+                    color: 'var(--outline)', fontSize: '0.65rem', fontWeight: 300,
+                    padding: '0.2rem 0.65rem', borderRadius: 3, fontFamily: font, letterSpacing: '0.06em',
+                  }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 11, fontVariationSettings: "'FILL' 0, 'wght' 300" }}>{src.icon}</span>
+                    {src.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* No audio data (video processed before audio logging was enabled) */}
+            {!audioAnalysis ? (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem', padding: '1.25rem 1.5rem', background: 'rgba(198,198,200,0.02)', border: '1px solid rgba(72,72,75,0.15)', borderRadius: 6 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--outline-dim)', flexShrink: 0, marginTop: 2, fontVariationSettings: "'FILL' 0, 'wght' 300" }}>info</span>
+                <div>
+                  <p style={{ color: 'var(--on-muted)', fontSize: '0.85rem', fontWeight: 300, fontFamily: font, marginBottom: '0.375rem' }}>
+                    Audio data not available for this video.
+                  </p>
+                  <p style={{ color: 'var(--outline-dim)', fontSize: '0.78rem', fontWeight: 300, fontFamily: font, lineHeight: 1.7 }}>
+                    This video was processed before the audio pipeline was added. Re-upload or process a new video to see Whisper large-v3 transcription, HTS-AT sound events, and music identification.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* Has audio data — two-column layout */
+              <div style={{ display: 'grid', gridTemplateColumns: audioAnalysis.transcription ? '1fr 1fr' : '1fr', gap: '1.5rem', alignItems: 'start' }}>
+
+                {/* Whisper transcription */}
+                {audioAnalysis.transcription ? (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <div style={{ width: 2, height: 14, background: 'linear-gradient(180deg, var(--primary), var(--outline))', borderRadius: 2, flexShrink: 0 }} />
+                      <span style={{ color: 'var(--outline)', fontSize: '0.62rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.2em', fontFamily: font }}>Whisper large-v3 — Speech Transcript</span>
+                    </div>
+                    <div style={{ background: 'rgba(198,198,200,0.02)', border: '1px solid rgba(72,72,75,0.18)', borderRadius: 6, padding: '1.25rem 1.5rem' }}>
+                      <p style={{ color: 'var(--on-muted)', fontSize: '0.875rem', fontWeight: 300, lineHeight: 1.9, fontFamily: font, margin: 0, fontStyle: 'italic' }}>
+                        "{audioAnalysis.transcription}"
+                      </p>
+                    </div>
+                    <p style={{ color: 'var(--outline-dim)', fontSize: '0.68rem', fontWeight: 300, fontFamily: font, marginTop: '0.625rem' }}>
+                      Whisper large-v3 — high-accuracy speech recognition
+                      {audioAnalysis.speech_confidence > 0 && (
+                        <span style={{ marginLeft: '0.5rem', color: 'var(--outline-dim)' }}>· {(audioAnalysis.speech_confidence * 100).toFixed(0)}% confidence</span>
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '1.25rem 1.5rem', background: 'rgba(198,198,200,0.02)', border: '1px solid rgba(72,72,75,0.15)', borderRadius: 6 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--outline-dim)', fontVariationSettings: "'FILL' 0, 'wght' 300" }}>voice_over_off</span>
+                    <span style={{ color: 'var(--outline)', fontSize: '0.825rem', fontWeight: 300, fontFamily: font }}>No speech detected by Whisper</span>
+                  </div>
+                )}
+
+                {/* HTS-AT sound events + music identification */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                  {/* HTS-AT events */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <div style={{ width: 2, height: 14, background: 'linear-gradient(180deg, var(--primary), var(--outline))', borderRadius: 2, flexShrink: 0 }} />
+                      <span style={{ color: 'var(--outline)', fontSize: '0.62rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.2em', fontFamily: font }}>HTS-AT — Detected Events</span>
+                    </div>
+
+                    {/* Badges: speech + dominant type */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                        background: audioAnalysis.has_speech ? 'rgba(110,231,183,0.06)' : 'rgba(72,72,75,0.08)',
+                        border: `1px solid ${audioAnalysis.has_speech ? 'rgba(110,231,183,0.2)' : 'rgba(72,72,75,0.18)'}`,
+                        color: audioAnalysis.has_speech ? '#6ee7b7' : 'var(--outline)',
+                        fontSize: '0.72rem', fontWeight: 300, padding: '0.2rem 0.625rem', borderRadius: 3, fontFamily: font,
+                      }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 11 }}>{audioAnalysis.has_speech ? 'record_voice_over' : 'voice_over_off'}</span>
+                        {audioAnalysis.has_speech ? 'Speech detected' : 'No speech'}
+                      </span>
+                      {audioAnalysis.dominant_type && (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                          background: 'rgba(198,198,200,0.04)', border: '1px solid rgba(72,72,75,0.18)',
+                          color: 'var(--outline)', fontSize: '0.72rem', fontWeight: 300,
+                          padding: '0.2rem 0.625rem', borderRadius: 3, fontFamily: font, textTransform: 'capitalize',
+                        }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 11, fontVariationSettings: "'FILL' 0, 'wght' 300" }}>equalizer</span>
+                          {audioAnalysis.dominant_type}
+                        </span>
+                      )}
+                    </div>
+
+                    {audioAnalysis.audio_events?.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                        {audioAnalysis.audio_events.map((ev, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+                            <span style={{ color: 'var(--on-muted)', fontSize: '0.825rem', fontWeight: 300, fontFamily: font, flex: 1, textTransform: 'capitalize' }}>{ev.event}</span>
+                            {ev.confidence != null && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
+                                <div style={{ width: 80, height: 2, background: 'rgba(72,72,75,0.25)', borderRadius: 1 }}>
+                                  <div style={{ width: `${(ev.confidence * 100).toFixed(0)}%`, height: '100%', background: i === 0 ? 'var(--primary)' : 'var(--outline)', borderRadius: 1, opacity: 1 - i * 0.12 }} />
+                                </div>
+                                <span style={{ color: 'var(--outline-dim)', fontSize: '0.68rem', fontFamily: font, minWidth: 32, textAlign: 'right' }}>{(ev.confidence * 100).toFixed(0)}%</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ color: 'var(--outline-dim)', fontSize: '0.825rem', fontWeight: 300, fontFamily: font }}>No sound events detected above threshold.</p>
+                    )}
+                    <p style={{ color: 'var(--outline-dim)', fontSize: '0.68rem', fontWeight: 300, fontFamily: font, marginTop: '0.875rem' }}>
+                      HTS-AT via LAION CLAP — zero-shot classification across 28 sound categories
+                    </p>
+                    {audioAnalysis.fusion_notes && (
+                      <p style={{ color: 'var(--outline-dim)', fontSize: '0.68rem', fontWeight: 300, fontFamily: font, marginTop: '0.375rem', fontStyle: 'italic' }}>
+                        {audioAnalysis.fusion_notes}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Music identification */}
+                  <div style={{ paddingTop: '1.125rem', borderTop: '1px solid rgba(72,72,75,0.12)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <div style={{ width: 2, height: 14, background: 'linear-gradient(180deg, var(--primary), var(--outline))', borderRadius: 2, flexShrink: 0 }} />
+                      <span style={{ color: 'var(--outline)', fontSize: '0.62rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.2em', fontFamily: font }}>Chromaprint — Music Identification</span>
+                    </div>
+
+                    {audioAnalysis.has_music && audioAnalysis.music_match ? (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '1rem 1.25rem', background: 'rgba(110,231,183,0.03)', border: '1px solid rgba(110,231,183,0.12)', borderRadius: 6 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#6ee7b7', flexShrink: 0, marginTop: 2, fontVariationSettings: "'FILL' 0, 'wght' 300" }}>music_note</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ color: 'var(--on-surface)', fontSize: '0.9rem', fontWeight: 300, fontFamily: font, marginBottom: '0.25rem' }}>
+                            {audioAnalysis.music_match.title}
+                          </p>
+                          <p style={{ color: 'var(--outline)', fontSize: '0.8rem', fontWeight: 300, fontFamily: font, marginBottom: '0.625rem' }}>
+                            {audioAnalysis.music_match.artist}
+                          </p>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                            background: 'rgba(110,231,183,0.06)', border: '1px solid rgba(110,231,183,0.18)',
+                            color: '#6ee7b7', fontSize: '0.68rem', fontWeight: 300, padding: '0.15rem 0.55rem', borderRadius: 3, fontFamily: font,
+                          }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 10 }}>fingerprint</span>
+                            {(audioAnalysis.music_match.confidence * 100).toFixed(0)}% match
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.875rem 1.25rem', background: 'rgba(198,198,200,0.02)', border: '1px solid rgba(72,72,75,0.12)', borderRadius: 6 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 15, color: 'var(--outline-dim)', fontVariationSettings: "'FILL' 0, 'wght' 300" }}>music_off</span>
+                        <span style={{ color: 'var(--outline-dim)', fontSize: '0.8rem', fontWeight: 300, fontFamily: font }}>No music identified</span>
+                      </div>
+                    )}
+                    <p style={{ color: 'var(--outline-dim)', fontSize: '0.68rem', fontWeight: 300, fontFamily: font, marginTop: '0.75rem' }}>
+                      Chromaprint + AcoustID — acoustic fingerprinting matched against MusicBrainz
+                    </p>
+                  </div>
+
+                </div>
+              </div>
+            )}
+          </GlowCard>
+        )}
 
         {/* Detection Charts */}
         {detections.length > 0 && (
@@ -307,6 +524,12 @@ export default function VideoDetailPage() {
             </div>
           </GlowCard>
         )}
+
+        {/* Perception Layer */}
+        <GlowCard style={{ marginBottom: '1.5rem', padding: '2rem 2.25rem' }}>
+          <SectionLabel>Perception Layer</SectionLabel>
+          <PerceptionLayer video={video} detections={detections} />
+        </GlowCard>
 
         <Footer />
       </main>

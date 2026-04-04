@@ -57,7 +57,8 @@ class TemporalAssembly:
     scenes: List[SceneSegment]
     object_tracks: List[ObjectTrack]
     action_timeline: List[ActionSegment]
-    audio_summary: Dict[str, Any]      # transcriptions + events
+    audio_summary: Dict[str, Any]      # transcriptions + events from per-frame analysis
+    music_identification: Optional[Dict[str, Any]] = None  # set by main.py after fingerprinting
 
     # ─────────────────────────────────────────────────────────────────
     #  Factory
@@ -88,6 +89,7 @@ class TemporalAssembly:
             object_tracks=object_tracks,
             action_timeline=action_timeline,
             audio_summary=audio_summary,
+            music_identification=None,  # populated by main.py after fingerprinting
         )
 
     # ─────────────────────────────────────────────────────────────────
@@ -210,25 +212,57 @@ class TemporalAssembly:
 
     @staticmethod
     def _build_audio_summary(results: List["FrameResult"]) -> Dict[str, Any]:
-        """Collect all transcription segments and unique audio events."""
+        """
+        Aggregate per-frame audio data from the new three-part audio pipeline.
+
+        Collects:
+          - Transcription segments with timestamps
+          - Average speech confidence across speech frames
+          - Peak confidence per HTS-AT sound category (top 5)
+          - Dominant-type vote count for global type estimation
+        """
         transcriptions = []
+        speech_confidences: list = []
         event_counts: Dict[str, float] = {}
+        dominant_votes: Dict[str, int] = {}
 
         for r in results:
             audio = r.usr.audio
+
+            # Speech
             text = audio.get("transcription", "").strip()
             if text:
-                transcriptions.append({"ts": r.timestamp, "text": text})
+                transcriptions.append({
+                    "ts": r.timestamp,
+                    "text": text,
+                    "confidence": audio.get("speech_confidence", 0.0),
+                })
+            sc = audio.get("speech_confidence", 0.0)
+            if sc > 0:
+                speech_confidences.append(sc)
+
+            # HTS-AT events — keep peak confidence per category
             for ev in audio.get("audio_events", []):
                 name = ev.get("event", "")
                 conf = ev.get("confidence", 0.0)
                 if name:
                     event_counts[name] = max(event_counts.get(name, 0.0), conf)
 
+            # Dominant-type vote
+            dt = audio.get("dominant_type", "silent")
+            dominant_votes[dt] = dominant_votes.get(dt, 0) + 1
+
         top_events = sorted(event_counts.items(), key=lambda x: -x[1])[:5]
+        avg_speech_conf = (
+            round(sum(speech_confidences) / len(speech_confidences), 4)
+            if speech_confidences else 0.0
+        )
+
         return {
             "transcriptions": transcriptions,
             "events": [{"event": e, "confidence": round(c, 3)} for e, c in top_events],
+            "avg_speech_confidence": avg_speech_conf,
+            "dominant_votes": dominant_votes,
         }
 
     # ─────────────────────────────────────────────────────────────────
@@ -263,13 +297,21 @@ class TemporalAssembly:
         if audio.get("transcriptions"):
             lines.append("SPEECH:")
             for seg in audio["transcriptions"]:
-                lines.append(f"  - {seg['ts']:.1f}s: \"{seg['text']}\"")
+                conf_str = f", conf={seg['confidence']*100:.0f}%" if seg.get("confidence") else ""
+                lines.append(f"  - {seg['ts']:.1f}s: \"{seg['text']}\"{conf_str}")
 
         if audio.get("events"):
             ev_str = ", ".join(
                 f"{e['event']} ({e['confidence']*100:.0f}%)"
                 for e in audio["events"]
             )
-            lines.append(f"AUDIO EVENTS: {ev_str}")
+            lines.append(f"AUDIO EVENTS (HTS-AT): {ev_str}")
+
+        if self.music_identification and self.music_identification.get("best_match"):
+            m = self.music_identification["best_match"]
+            lines.append(
+                f"MUSIC IDENTIFIED: \"{m['title']}\" by {m['artist']} "
+                f"({m['confidence']*100:.0f}% match confidence)"
+            )
 
         return "\n".join(lines) if lines else "(no temporal data)"

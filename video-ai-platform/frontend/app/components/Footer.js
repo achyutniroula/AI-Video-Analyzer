@@ -13,7 +13,7 @@ export default function Footer() {
       marginTop: 'auto',
     }}>
       <p style={{
-        color: 'var(--outline-dim)',
+        color: 'var(--on-muted)',
         fontSize: '0.72rem',
         fontWeight: 300,
         letterSpacing: '0.12em',
@@ -22,7 +22,7 @@ export default function Footer() {
         Developed by Achyut and Shoaib
       </p>
       <p style={{
-        color: 'var(--outline-faint)',
+        color: 'var(--outline)',
         fontSize: '0.68rem',
         fontWeight: 300,
         letterSpacing: '0.1em',

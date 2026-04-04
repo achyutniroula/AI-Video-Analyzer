@@ -11,7 +11,7 @@ const font = "'Manrope', sans-serif";
 const cards = [
   { icon: 'upload', label: 'New Upload', title: 'Upload Video', desc: 'Submit a new video for AI analysis', href: '/upload', cta: 'Import Media' },
   { icon: 'video_library', label: 'Library', title: 'My Videos', desc: 'Browse and review processed results', href: '/videos', cta: 'Open Library' },
-  { icon: 'monitoring', label: 'System', title: 'System Status', desc: 'Monitor processing queue and worker health', href: '/videos', cta: 'View Status' },
+  { icon: 'monitoring', label: 'System', title: 'System Logs', desc: 'Full worker output and processing logs for every video', href: '/system', cta: 'View Logs' },
 ];
 
 export default function Dashboard() {
@@ -60,7 +60,7 @@ export default function Dashboard() {
 
         {/* Welcome */}
         <div style={{ marginBottom: '4rem' }}>
-          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.05, letterSpacing: '0.02em', color: '#e7e5e8', marginBottom: '0.75rem' }}>
+          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.05, letterSpacing: '0.02em', color: 'var(--on-surface)', marginBottom: '0.75rem' }}>
             Welcome Back
           </h1>
           <p style={{ fontFamily: font, color: '#767578', fontSize: '0.95rem', fontWeight: 300, letterSpacing: '0.03em' }}>
@@ -79,43 +79,22 @@ export default function Dashboard() {
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
               {/* Thumbnail */}
-              <div style={{ height: 120, overflow: 'hidden', borderRadius: '10px 10px 0 0', position: 'relative', background: 'rgba(37,38,40,0.8)' }}>
-                {i === 0 && (
-                  /* Upload thumbnail — upward arrow motif */
-                  <>
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(72,72,75,0.25) 0%, rgba(37,38,40,0) 100%)' }} />
-                    <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 2, height: 32, background: 'linear-gradient(180deg, rgba(198,198,200,0.6), rgba(198,198,200,0.1))' }} />
-                      <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderBottom: '9px solid rgba(198,198,200,0.5)', position: 'absolute', top: -9, transform: 'translateY(-100%)' }} />
-                    </div>
-                    <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', width: 44, height: 2, background: 'rgba(198,198,200,0.15)', borderRadius: 1 }} />
-                    {[...Array(5)].map((_, j) => (
-                      <div key={j} style={{ position: 'absolute', width: 2, height: 2, borderRadius: '50%', background: `rgba(198,198,200,${0.08 + j * 0.04})`, top: `${20 + j * 12}%`, left: `${15 + j * 16}%` }} />
-                    ))}
-                  </>
-                )}
-                {i === 1 && (
-                  /* Library thumbnail — grid of video frame previews */
-                  <div style={{ position: 'absolute', inset: 12, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridTemplateRows: 'repeat(2, 1fr)', gap: 4 }}>
-                    {[...Array(8)].map((_, j) => (
-                      <div key={j} style={{ borderRadius: 3, background: `rgba(198,198,200,${0.04 + (j % 3) * 0.03})`, border: '1px solid rgba(72,72,75,0.25)', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', top: '30%', left: '15%', right: '15%', height: 1, background: `rgba(198,198,200,${0.1 + (j % 2) * 0.08})`, borderRadius: 1 }} />
-                        <div style={{ position: 'absolute', top: '60%', left: '15%', right: '30%', height: 1, background: `rgba(198,198,200,0.06)`, borderRadius: 1 }} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {i === 2 && (
-                  /* System status thumbnail — pulse line graph */
-                  <>
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(37,38,40,0) 0%, rgba(72,72,75,0.15) 100%)' }} />
-                    <svg viewBox="0 0 200 80" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', padding: '12px 16px' }} preserveAspectRatio="none">
-                      <polyline points="0,55 25,50 50,35 75,40 100,20 125,30 150,25 175,35 200,28" fill="none" stroke="rgba(198,198,200,0.3)" strokeWidth="1.5" strokeLinejoin="round" />
-                      <polyline points="0,65 25,62 50,58 75,60 100,52 125,55 150,50 175,53 200,48" fill="none" stroke="rgba(198,198,200,0.12)" strokeWidth="1" strokeLinejoin="round" />
-                    </svg>
-                    <div style={{ position: 'absolute', top: 14, right: 16, width: 6, height: 6, borderRadius: '50%', background: 'rgba(110,231,183,0.8)', boxShadow: '0 0 8px rgba(110,231,183,0.4)' }} />
-                  </>
-                )}
+              <div style={{ height: 148, overflow: 'hidden', borderRadius: '10px 10px 0 0', position: 'relative' }}>
+                <img
+                  src={[
+                    'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=700&q=80',
+                    'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=700&q=80',
+                    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=700&q=80',
+                  ][i]}
+                  alt={card.title}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+                {/* Gradient overlay */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg, rgba(14,14,15,0.15) 0%, rgba(14,14,15,0.55) 100%)' }} />
+                {/* Icon badge */}
+                <div style={{ position: 'absolute', bottom: 14, left: 16, width: 36, height: 36, borderRadius: 8, background: 'rgba(14,14,15,0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(198,198,200,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#c6c6c8', fontVariationSettings: "'FILL' 0, 'wght' 300" }}>{card.icon}</span>
+                </div>
               </div>
 
               <div style={{ padding: '1.75rem 2rem 2rem' }}>

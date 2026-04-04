@@ -5,11 +5,22 @@ Mirrors the old worker's SQSHandler exactly, only the config import changes.
 """
 
 import json
+import threading
 
 import boto3
 from botocore.exceptions import ClientError
 
 from worker.config import settings
+
+# How long to make the message invisible when first received (seconds).
+# Must be >= your longest expected processing time.
+_INITIAL_VISIBILITY = 3600  # 1 hour
+
+# How often the heartbeat extends the timeout (seconds).
+_HEARTBEAT_INTERVAL = 300   # 5 minutes
+
+# How much extra time to add each heartbeat (seconds).
+_HEARTBEAT_EXTENSION = 600  # 10 minutes
 
 
 class SQSHandler:
@@ -29,6 +40,7 @@ class SQSHandler:
                 QueueUrl=self.queue_url,
                 MaxNumberOfMessages=max_messages,
                 WaitTimeSeconds=wait_time,
+                VisibilityTimeout=_INITIAL_VISIBILITY,
                 MessageAttributeNames=["All"],
                 AttributeNames=["All"],
             )
@@ -36,6 +48,40 @@ class SQSHandler:
         except ClientError as e:
             print(f"Error receiving messages: {e}")
             return []
+
+    def extend_visibility(self, receipt_handle: str, extra_seconds: int = _HEARTBEAT_EXTENSION) -> bool:
+        """Extend the visibility timeout for an in-flight message."""
+        try:
+            self.sqs_client.change_message_visibility(
+                QueueUrl=self.queue_url,
+                ReceiptHandle=receipt_handle,
+                VisibilityTimeout=extra_seconds,
+            )
+            return True
+        except ClientError as e:
+            print(f"Warning: could not extend visibility timeout: {e}")
+            return False
+
+    def start_heartbeat(self, receipt_handle: str) -> threading.Event:
+        """
+        Start a background thread that periodically extends the visibility
+        timeout for a message being processed.
+
+        Returns a stop_event — call stop_event.set() when processing is done.
+        """
+        stop_event = threading.Event()
+
+        def _heartbeat():
+            while not stop_event.wait(timeout=_HEARTBEAT_INTERVAL):
+                ok = self.extend_visibility(receipt_handle, _HEARTBEAT_EXTENSION)
+                if ok:
+                    print(f"[SQS] Visibility extended by {_HEARTBEAT_EXTENSION}s")
+                else:
+                    print("[SQS] Warning: heartbeat extend failed")
+
+        t = threading.Thread(target=_heartbeat, daemon=True)
+        t.start()
+        return stop_event
 
     def delete_message(self, receipt_handle: str) -> bool:
         """Delete a message from the queue after successful processing."""

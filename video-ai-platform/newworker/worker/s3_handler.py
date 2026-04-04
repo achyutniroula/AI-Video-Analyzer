@@ -75,6 +75,22 @@ class S3Handler:
             print(f"Failed to upload JSON: {e}")
             return False
 
+    def upload_bytes(self, data: bytes, s3_key: str, content_type: str = 'application/octet-stream') -> bool:
+        """Upload raw bytes to S3 (used for thumbnails, etc.)."""
+        try:
+            print(f"Uploading bytes to S3: {s3_key} ({len(data)} bytes)")
+            self.s3_client.put_object(
+                Bucket=self.bucket_name,
+                Key=s3_key,
+                Body=data,
+                ContentType=content_type,
+            )
+            print("Bytes uploaded")
+            return True
+        except ClientError as e:
+            print(f"Failed to upload bytes: {e}")
+            return False
+
     # ─────────────────────────────────────────────────────────────────
     #  Existence check
     # ─────────────────────────────────────────────────────────────────

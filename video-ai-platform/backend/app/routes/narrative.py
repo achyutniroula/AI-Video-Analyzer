@@ -10,6 +10,7 @@ import json
 from decimal import Decimal
 from datetime import datetime
 import os
+import anthropic
 
 from app.utils.narrative_service import generate_phase4_narrative
 
@@ -27,6 +28,27 @@ s3_client = boto3.client(
     region_name=os.getenv('AWS_REGION', 'us-east-2')
 )
 S3_BUCKET = os.getenv('S3_BUCKET_NAME', 'video-ai-uploads')
+
+
+def _generate_summary(narrative_text: str) -> str:
+    """Use Claude to generate a 1-2 sentence summary of a narrative."""
+    try:
+        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=120,
+            messages=[{
+                "role": "user",
+                "content": (
+                    "Write a 1-2 sentence executive summary of this video analysis narrative. "
+                    "Be concise and specific about what is in the video:\n\n" + narrative_text[:2000]
+                )
+            }],
+        )
+        return response.content[0].text.strip()
+    except Exception as e:
+        print(f"Summary generation failed: {e}")
+        return ""
 
 
 def decimal_to_float(obj):
@@ -68,15 +90,19 @@ async def generate_narrative(video_id: str):
         if isinstance(existing_narrative, str) and existing_narrative:
             print(f"✓ Returning pre-generated narrative for {video_id} (new worker)")
             narrative_text = existing_narrative
+            # Use stored summary (new worker saves it) or generate on the fly
+            summary_text = video_data.get('narrative_summary') or ''
+            if not summary_text:
+                summary_text = _generate_summary(narrative_text)
             return {
                 "video_id": video_id,
                 "narrative": narrative_text,
                 "key_moments": [],
-                "summary": narrative_text[:500] + '...' if len(narrative_text) > 500 else narrative_text,
+                "summary": summary_text,
                 "confidence": "high",
                 "metadata": {
                     "detection_count": video_data.get('frame_count', 0),
-                    "has_audio": False,
+                    "has_audio": bool(video_data.get('audio_analysis')),
                     "duration": float(video_data.get('duration', 0) or 0),
                 },
                 "generated_at": int(datetime.now().timestamp()),
@@ -203,7 +229,10 @@ async def get_narrative(video_id: str):
         if isinstance(narrative, str):
             narrative_text = narrative
             key_moments = []
-            summary_text = narrative[:500] + '...' if len(narrative) > 500 else narrative
+            # Use stored summary if available, otherwise generate one
+            summary_text = video_data.get('narrative_summary') or ''
+            if not summary_text:
+                summary_text = _generate_summary(narrative_text)
             confidence = 'high'
             generated_at = video_data.get('processed_at')
         else:

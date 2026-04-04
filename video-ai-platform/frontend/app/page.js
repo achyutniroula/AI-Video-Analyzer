@@ -8,12 +8,41 @@ import { GlassButton } from '@/components/ui/liquid-glass-button';
 const font = "'Manrope', sans-serif";
 
 const features = [
-  { icon: 'psychology', title: 'Multi-Model Detection', desc: 'YOLOv11, SAM2, CLIP, SigLIP, SlowFast and more — working in ensemble for maximum accuracy.' },
-  { icon: 'bolt', title: 'Real-Time Analysis', desc: 'Frame-by-frame breakdown with bounding boxes, depth maps, panoptic segmentation and action recognition.' },
-  { icon: 'article', title: 'AI Narratives', desc: 'Claude generates rich, human-readable descriptions of everything happening in your video.' },
-  { icon: 'visibility', title: 'Scene Understanding', desc: 'Spatial relationships, scene graphs, and environmental context extracted automatically.' },
-  { icon: 'graphic_eq', title: 'Audio Intelligence', desc: 'Whisper transcription, PANNs audio events, and audio-visual fusion analysis.' },
-  { icon: 'play_circle', title: 'Interactive Playback', desc: 'Watch your video with live detection overlays and per-frame confidence scores.' },
+  {
+    icon: 'visibility',
+    title: 'Vision Models',
+    desc: 'SigLIP scene embeddings · DepthAnything V2 depth & spatial layout · Mask2Former panoptic segmentation (things + stuff) · Scene Graph Generation for object-to-object spatial reasoning.',
+  },
+  {
+    icon: 'directions_run',
+    title: 'Motion & Tracking',
+    desc: 'SlowFast action recognition with temporal modeling · ByteTrack multi-object tracking with persistent track IDs across frames.',
+  },
+  {
+    icon: 'graphic_eq',
+    title: 'Audio Intelligence',
+    desc: 'Whisper speech transcription with audio embeddings · PANNs audio event classification and scene-level sound recognition.',
+  },
+  {
+    icon: 'hub',
+    title: 'Multi-Modal Fusion',
+    desc: 'Cross-modal alignment of detections, depth maps, panoptic masks, scene embeddings, audio events, action labels, and spatial relationships into a unified scene representation.',
+  },
+  {
+    icon: 'psychology',
+    title: 'VLM Reasoning',
+    desc: 'Qwen2-VL frame-level captioning and visual reasoning · Structured prompt engineering with context injection and token-length control.',
+  },
+  {
+    icon: 'article',
+    title: 'Narrative Generation',
+    desc: 'Claude assembles timestamped narratives from scene segments, track-based groupings, action timelines, and audio summaries — with multi-frame coherence and high-level reasoning.',
+  },
+  {
+    icon: 'play_circle',
+    title: 'Interactive Playback',
+    desc: 'Watch your video with live bounding box overlays, frame-by-frame detection chips, and per-frame confidence scores synced to playback.',
+  },
 ];
 
 export default function Home() {
@@ -63,8 +92,8 @@ export default function Home() {
             Video Understanding<br />
             <span style={{ color: '#767578' }}>Redefined</span>
           </h1>
-          <p style={{ color: '#acaaae', fontSize: 'clamp(0.9rem, 2vw, 1.05rem)', lineHeight: 1.8, fontWeight: 300, maxWidth: 540, margin: '0 auto' }}>
-            Analyze videos with 14 AI models simultaneously. Real-time object detection, scene understanding, and Claude-powered narratives.
+          <p style={{ color: '#acaaae', fontSize: 'clamp(0.9rem, 2vw, 1.05rem)', lineHeight: 1.8, fontWeight: 300, maxWidth: 600, margin: '0 auto' }}>
+            A cloud‑native multimodal AI engine that analyzes video using advanced vision, audio, depth, and action‑recognition models — with scene understanding and Claude‑powered narrative generation.
           </p>
         </div>
 
