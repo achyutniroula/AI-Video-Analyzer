@@ -244,7 +244,7 @@ export default function VideoDetailPage() {
         {/* Title + Status */}
         <div style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.375rem' }}>
-            <h1 style={{ fontFamily: font, fontWeight: 300, fontSize: '1.25rem', color: 'var(--on-surface)', letterSpacing: '0.02em' }}>
+            <h1 style={{ fontFamily: font, fontWeight: 300, fontSize: '1.25rem', color: 'var(--on-surface)', letterSpacing: '0.02em', filter: 'drop-shadow(0 0 10px var(--header-glow-3)) drop-shadow(0 0 20px var(--header-glow-1))' }}>
               {video.display_name || videoId}
             </h1>
             <StatusBadge status={video.status} />

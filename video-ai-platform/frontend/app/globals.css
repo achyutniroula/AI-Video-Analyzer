@@ -24,6 +24,9 @@
   --spinner-color:    rgba(198, 198, 200, 0.5);
   --ambient-glow:     rgba(198, 198, 200, 0.025);
   --ctrl-bg:          rgba(14, 14, 15, 0.95);
+  --header-glow-1:    rgba(100, 200, 255, 0.6);
+  --header-glow-2:    rgba(198, 119, 221, 0.4);
+  --header-glow-3:    rgba(0, 255, 200, 0.2);
 }
 
 /* ── Light theme ──────────────────────────────────────── */
@@ -49,6 +52,9 @@
   --spinner-color:    rgba(60, 60, 62, 0.5);
   --ambient-glow:     rgba(0, 0, 0, 0.03);
   --ctrl-bg:          rgba(26, 26, 28, 0.92);
+  --header-glow-1:    rgba(70, 180, 255, 0.7);
+  --header-glow-2:    rgba(180, 80, 200, 0.5);
+  --header-glow-3:    rgba(0, 220, 180, 0.3);
 }
 
 * {

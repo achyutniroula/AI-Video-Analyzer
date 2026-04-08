@@ -52,15 +52,23 @@ export const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>
         background: hovered ? 'rgba(198,198,200,0.13)' : 'rgba(198,198,200,0.07)',
         border: `1px solid ${hovered ? 'var(--glass-border-h)' : 'rgba(198,198,200,0.2)'}`,
         color: hovered ? 'var(--on-surface)' : 'var(--primary-dim)',
-        boxShadow: hovered ? 'inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
+        boxShadow: hovered 
+          ? 'inset 0 1px 0 rgba(255,255,255,0.08), 0 0 20px rgba(255, 0, 127, 0.1)' 
+          : 'inset 0 0 15px rgba(100, 200, 255, 0.05)',
       } : variant === 'secondary' ? {
         background: hovered ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
         border: `1px solid ${hovered ? 'var(--outline)' : 'var(--outline-dim)'}`,
         color: hovered ? 'var(--on-muted)' : 'var(--outline)',
+        boxShadow: hovered 
+          ? '0 0 15px rgba(0, 255, 200, 0.08)' 
+          : 'inset 0 0 10px rgba(100, 200, 255, 0.03)',
       } : {
         background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
         border: '1px solid transparent',
         color: hovered ? 'var(--on-muted)' : 'var(--outline)',
+        boxShadow: hovered 
+          ? '0 0 15px rgba(198, 119, 221, 0.1)' 
+          : 'none',
       };
 
     return (
@@ -83,6 +91,10 @@ export const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>
           whiteSpace: 'nowrap',
           fontFamily: "'Manrope', sans-serif",
           minWidth: 120,
+          backgroundImage: hovered
+            ? 'linear-gradient(135deg, rgba(255, 0, 127, 0.06), rgba(0, 255, 200, 0.03), rgba(100, 200, 255, 0.05))'
+            : 'linear-gradient(135deg, rgba(255, 0, 127, 0.02), rgba(0, 255, 200, 0.01), rgba(100, 200, 255, 0.02))',
+          backgroundBlendMode: 'overlay',
           ...sizeStyles,
           ...base,
           ...style,

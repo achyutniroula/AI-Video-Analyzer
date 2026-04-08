@@ -49,7 +49,7 @@ export default function UploadPage() {
       <main style={{ marginLeft: 256, flex: 1, position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '4rem 2rem' }}>
         <div style={{ width: '100%', maxWidth: 600 }}>
           <p style={{ fontSize: '0.65rem', fontWeight: 300, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#767578', marginBottom: '1.25rem', textAlign: 'center' }}>New Upload</p>
-          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2rem, 4vw, 2.75rem)', color: 'var(--on-surface)', marginBottom: '0.75rem', letterSpacing: '0.03em', textAlign: 'center' }}>Import Media</h1>
+          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2rem, 4vw, 2.75rem)', color: 'var(--on-surface)', marginBottom: '0.75rem', letterSpacing: '0.03em', textAlign: 'center', filter: 'drop-shadow(0 0 12px var(--header-glow-3)) drop-shadow(0 0 25px var(--header-glow-1))' }}>Import Media</h1>
           <p style={{ color: '#767578', fontFamily: font, fontSize: '0.9rem', fontWeight: 300, marginBottom: '2.5rem', letterSpacing: '0.02em', textAlign: 'center', lineHeight: 1.7 }}>
             Submit your video for AI analysis — detection, segmentation, and narrative generation.
           </p>

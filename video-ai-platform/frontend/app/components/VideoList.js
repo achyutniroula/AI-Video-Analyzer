@@ -80,10 +80,28 @@ function VideoCard({ video, onDelete, onRename }) {
   }
 
   return (
-    <GlowCard style={{ cursor: 'pointer', transition: 'transform 0.3s cubic-bezier(0.2,0,0,1)', position: 'relative' }}>
+    <GlowCard style={{ cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2,0,0,1)', position: 'relative', transform: 'scale(1)' }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'scale(1.02)';
+        e.currentTarget.style.boxShadow = '0 20px 80px rgba(0,0,0,0.25), 0 4px 24px rgba(0,0,0,0.15), inset 0 0 40px rgba(198, 119, 221, 0.12)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.08), inset 0 0 20px rgba(118, 184, 255, 0.03)';
+      }}
+    >
       {/* Thumbnail */}
       <Link href={`/videos/${video.video_id}`} style={{ display: 'block', textDecoration: 'none' }}>
-        <div style={{ background: 'var(--surface-low)', aspectRatio: '16/9', position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--glass-border)' }}>
+        <div style={{ background: 'var(--surface-low)', aspectRatio: '16/9', position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--glass-border)', transition: 'all 0.3s cubic-bezier(0.2,0,0,1)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter = 'brightness(1.15) saturate(1.2)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = 'brightness(1) saturate(1)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
           {thumbnailUrl ? (
             <>
               <img src={thumbnailUrl} alt="thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -273,7 +291,7 @@ export default function VideoList() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.25rem' }}>
         <div>
           <p style={{ fontSize: '0.65rem', fontWeight: 300, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#767578', marginBottom: '1rem' }}>Library</p>
-          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'var(--on-surface)', letterSpacing: '0.03em' }}>Recent Captures</h1>
+          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'var(--on-surface)', letterSpacing: '0.03em', filter: 'drop-shadow(0 0 12px var(--header-glow-3)) drop-shadow(0 0 25px var(--header-glow-1))' }}>Recent Captures</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <GlassButton onClick={loadVideos} variant="secondary" size="sm">

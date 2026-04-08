@@ -158,17 +158,22 @@ export default function Sidebar() {
                 fontSize: '0.875rem', fontWeight: 300, letterSpacing: '0.03em',
                 transition: 'all 0.2s cubic-bezier(0.2,0,0,1)',
                 textDecoration: 'none',
+                boxShadow: isActive ? 'inset 0 0 15px rgba(100, 200, 255, 0.05), 0 0 12px rgba(100, 200, 255, 0.08)' : 'none',
               }}
               onMouseEnter={e => {
                 if (!isActive) {
                   e.currentTarget.style.color = 'var(--on-muted)';
                   e.currentTarget.style.background = 'var(--glass-bg)';
+                  e.currentTarget.style.borderColor = 'rgba(198, 119, 221, 0.4)';
+                  e.currentTarget.style.boxShadow = 'inset 0 0 15px rgba(198, 119, 221, 0.08), 0 0 15px rgba(198, 119, 221, 0.12)';
                 }
               }}
               onMouseLeave={e => {
                 if (!isActive) {
                   e.currentTarget.style.color = 'var(--outline)';
                   e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                  e.currentTarget.style.boxShadow = 'none';
                 }
               }}
             >
@@ -188,7 +193,7 @@ export default function Sidebar() {
           style={{
             display: 'flex', alignItems: 'center', gap: '0.75rem',
             padding: '0.75rem 1rem',
-            background: 'none', border: 'none',
+            background: 'none', border: '1px solid transparent',
             cursor: 'pointer',
             color: 'var(--outline)',
             fontSize: '0.875rem', fontWeight: 300, letterSpacing: '0.03em',
@@ -196,8 +201,18 @@ export default function Sidebar() {
             transition: 'all 0.2s cubic-bezier(0.2,0,0,1)',
             width: '100%', textAlign: 'left',
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--on-muted)'; e.currentTarget.style.background = 'var(--glass-bg)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--outline)'; e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={e => { 
+            e.currentTarget.style.color = 'var(--on-muted)'; 
+            e.currentTarget.style.background = 'var(--glass-bg)';
+            e.currentTarget.style.borderColor = 'rgba(100, 200, 255, 0.4)';
+            e.currentTarget.style.boxShadow = 'inset 0 0 15px rgba(100, 200, 255, 0.08), 0 0 15px rgba(100, 200, 255, 0.12)';
+          }}
+          onMouseLeave={e => { 
+            e.currentTarget.style.color = 'var(--outline)'; 
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 20, flexShrink: 0 }}>{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
           <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
@@ -209,7 +224,7 @@ export default function Sidebar() {
           style={{
             display: 'flex', alignItems: 'center', gap: '0.75rem',
             padding: '0.75rem 1rem',
-            background: 'none', border: 'none',
+            background: 'none', border: '1px solid transparent',
             cursor: 'pointer',
             color: 'var(--outline)',
             fontSize: '0.875rem', fontWeight: 300, letterSpacing: '0.03em',
@@ -217,8 +232,18 @@ export default function Sidebar() {
             transition: 'all 0.2s cubic-bezier(0.2,0,0,1)',
             width: '100%', textAlign: 'left',
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--on-muted)'; e.currentTarget.style.background = 'var(--glass-bg)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--outline)'; e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={e => { 
+            e.currentTarget.style.color = 'var(--on-muted)'; 
+            e.currentTarget.style.background = 'var(--glass-bg)';
+            e.currentTarget.style.borderColor = 'rgba(238, 125, 119, 0.4)';
+            e.currentTarget.style.boxShadow = 'inset 0 0 15px rgba(238, 125, 119, 0.08), 0 0 15px rgba(238, 125, 119, 0.12)';
+          }}
+          onMouseLeave={e => { 
+            e.currentTarget.style.color = 'var(--outline)'; 
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 20, flexShrink: 0 }}>logout</span>
           <span>Sign Out</span>

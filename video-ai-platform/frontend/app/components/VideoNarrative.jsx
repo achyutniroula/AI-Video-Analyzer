@@ -100,9 +100,6 @@ export default function VideoNarrative({ videoId }) {
                 }}>
                   {narrative.narrative}
                 </p>
-                {!showFull && (
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 48, background: 'linear-gradient(to bottom, transparent, rgba(14,14,15,0.85))', pointerEvents: 'none' }} />
-                )}
               </div>
               <button
                 onClick={() => setShowFull(v => !v)}

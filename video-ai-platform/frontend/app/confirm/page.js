@@ -90,12 +90,14 @@ export default function ConfirmPage() {
       <div style={{ width: '100%', maxWidth: 420 }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', marginBottom: '2rem' }}>
-            <div style={{ width: 26, height: 26, background: 'linear-gradient(135deg, #c6c6c8, #454749)', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#0e0e0f', fontVariationSettings: "'FILL' 1, 'wght' 400" }}>camera</span>
+            <div style={{ width: 26, height: 26, background: 'linear-gradient(135deg, var(--primary), var(--outline))', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--bg)', fontVariationSettings: "'FILL' 1, 'wght' 500" }}>lens</span>
             </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 300, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#767578' }}>Video Understanding Platform</span>
+            <div>
+              <span style={{ fontSize: '0.875rem', fontWeight: 200, letterSpacing: '0.15em', color: 'var(--on-surface)' }}>VisionFlow</span>
+            </div>
           </div>
-          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: '2.5rem', color: '#e7e5e8', letterSpacing: '0.04em', marginBottom: '0.5rem' }}>Confirm Email</h1>
+          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: '2.5rem', color: 'var(--on-surface)', letterSpacing: '0.04em', marginBottom: '0.5rem', filter: 'drop-shadow(0 0 14px var(--header-glow-1)) drop-shadow(0 0 28px var(--header-glow-2))' }}>Confirm Email</h1>
           <p style={{ color: '#767578', fontSize: '0.875rem', fontWeight: 300, letterSpacing: '0.05em' }}>Enter the 6-digit code sent to your email</p>
         </div>
 

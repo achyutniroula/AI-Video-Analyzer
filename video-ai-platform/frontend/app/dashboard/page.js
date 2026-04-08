@@ -60,7 +60,7 @@ export default function Dashboard() {
 
         {/* Welcome */}
         <div style={{ marginBottom: '4rem' }}>
-          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.05, letterSpacing: '0.02em', color: 'var(--on-surface)', marginBottom: '0.75rem' }}>
+          <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.05, letterSpacing: '0.02em', color: 'var(--on-surface)', marginBottom: '0.75rem', filter: 'drop-shadow(0 0 14px var(--header-glow-1)) drop-shadow(0 0 28px var(--header-glow-2))' }}>
             Welcome Back
           </h1>
           <p style={{ fontFamily: font, color: '#767578', fontSize: '0.95rem', fontWeight: 300, letterSpacing: '0.03em' }}>
@@ -79,16 +79,81 @@ export default function Dashboard() {
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
               {/* Thumbnail */}
-              <div style={{ height: 148, overflow: 'hidden', borderRadius: '10px 10px 0 0', position: 'relative' }}>
-                <img
-                  src={[
-                    'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=700&q=80',
-                    'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=700&q=80',
-                    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=700&q=80',
-                  ][i]}
-                  alt={card.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
+              <div style={{ height: 148, overflow: 'hidden', borderRadius: '10px 10px 0 0', position: 'relative', background: '#0e0e0f' }}>
+                {i === 0 && (
+                  <svg width="100%" height="100%" viewBox="0 0 280 148" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="uploadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{stopColor:'#1a1a1c',stopOpacity:1}} />
+                        <stop offset="100%" style={{stopColor:'#2a2a2e',stopOpacity:1}} />
+                      </linearGradient>
+                    </defs>
+                    <rect width="280" height="148" fill="url(#uploadGrad)"/>
+                    <g transform="translate(140,74)">
+                      <circle cx="0" cy="0" r="25" fill="none" stroke="#c6c6c8" strokeWidth="1" opacity="0.3"/>
+                      <path d="M -15 -10 L 0 5 L 15 -10" stroke="#c6c6c8" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="2s" repeatCount="indefinite"/>
+                      </path>
+                      <rect x="-8" y="8" width="16" height="2" fill="#767578" rx="1"/>
+                      <rect x="-8" y="12" width="12" height="2" fill="#767578" rx="1"/>
+                      <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
+                    </g>
+                  </svg>
+                )}
+                {i === 1 && (
+                  <svg width="100%" height="100%" viewBox="0 0 280 148" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="videoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{stopColor:'#1a1a1c',stopOpacity:1}} />
+                        <stop offset="100%" style={{stopColor:'#2a2a2e',stopOpacity:1}} />
+                      </linearGradient>
+                    </defs>
+                    <rect width="280" height="148" fill="url(#videoGrad)"/>
+                    <g transform="translate(140,74)">
+                      <rect x="-20" y="-15" width="40" height="30" fill="none" stroke="#c6c6c8" strokeWidth="1" rx="2"/>
+                      <polygon points="-10,-8 0,0 -10,8" fill="#c6c6c8">
+                        <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+                      </polygon>
+                      <line x1="-5" y1="10" x2="15" y2="10" stroke="#767578" strokeWidth="2" strokeLinecap="round">
+                        <animate attributeName="stroke-dasharray" values="0,20;20,0" dur="1.5s" repeatCount="indefinite"/>
+                      </line>
+                      <circle cx="8" cy="-5" r="1" fill="#c6c6c8" opacity="0.8">
+                        <animate attributeName="cy" values="-5;-3;-5" dur="2s" repeatCount="indefinite"/>
+                      </circle>
+                      <circle cx="12" cy="-5" r="1" fill="#c6c6c8" opacity="0.6">
+                        <animate attributeName="cy" values="-5;-4;-5" dur="2.5s" repeatCount="indefinite"/>
+                      </circle>
+                    </g>
+                  </svg>
+                )}
+                {i === 2 && (
+                  <svg width="100%" height="100%" viewBox="0 0 280 148" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="logsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{stopColor:'#1a1a1c',stopOpacity:1}} />
+                        <stop offset="100%" style={{stopColor:'#2a2a2e',stopOpacity:1}} />
+                      </linearGradient>
+                    </defs>
+                    <rect width="280" height="148" fill="url(#logsGrad)"/>
+                    <g transform="translate(140,74)">
+                      <rect x="-25" y="-20" width="50" height="40" fill="none" stroke="#c6c6c8" strokeWidth="1" rx="2"/>
+                      <line x1="-20" y1="-10" x2="20" y2="-10" stroke="#767578" strokeWidth="1"/>
+                      <line x1="-20" y1="-5" x2="15" y2="-5" stroke="#767578" strokeWidth="1"/>
+                      <line x1="-20" y1="0" x2="10" y2="0" stroke="#767578" strokeWidth="1"/>
+                      <line x1="-20" y1="5" x2="18" y2="5" stroke="#767578" strokeWidth="1"/>
+                      <line x1="-20" y1="10" x2="12" y2="10" stroke="#767578" strokeWidth="1"/>
+                      <line x1="-20" y1="15" x2="16" y2="15" stroke="#767578" strokeWidth="1">
+                        <animate attributeName="x2" values="16;20;16" dur="1s" repeatCount="indefinite"/>
+                      </line>
+                      <circle cx="22" cy="-12" r="2" fill="#c6c6c8" opacity="0.7">
+                        <animate attributeName="cy" values="-12;-10;-12" dur="1.5s" repeatCount="indefinite"/>
+                      </circle>
+                      <circle cx="25" cy="2" r="2" fill="#c6c6c8" opacity="0.5">
+                        <animate attributeName="cy" values="2;4;2" dur="2s" repeatCount="indefinite"/>
+                      </circle>
+                    </g>
+                  </svg>
+                )}
                 {/* Gradient overlay */}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg, rgba(14,14,15,0.15) 0%, rgba(14,14,15,0.55) 100%)' }} />
                 {/* Icon badge */}

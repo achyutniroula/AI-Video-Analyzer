@@ -256,7 +256,7 @@ export default function SystemPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(1.4rem, 3vw, 2rem)', color: 'var(--on-surface)', letterSpacing: '0.02em', marginBottom: '0.375rem' }}>
+            <h1 style={{ fontFamily: font, fontWeight: 200, fontSize: 'clamp(1.4rem, 3vw, 2rem)', color: 'var(--on-surface)', letterSpacing: '0.02em', marginBottom: '0.375rem', filter: 'drop-shadow(0 0 14px var(--header-glow-2)) drop-shadow(0 0 28px var(--header-glow-1))' }}>
               System Logs
             </h1>
             <p style={{ color: 'var(--outline)', fontSize: '0.825rem', fontWeight: 300, fontFamily: font }}>
