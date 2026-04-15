@@ -78,6 +78,32 @@ _HTSAT_THRESHOLD = 0.20
 # Categories that are treated as "music" signal for dominant_type fusion
 _MUSIC_LABELS = {"music", "singing voice"}
 
+# Music description labels for zero-shot genre/mood classification.
+# Queried against the same CLAP model when music is detected above threshold.
+_MUSIC_DESCRIPTION_LABELS: List[str] = [
+    "soft piano music",
+    "classical piano music",
+    "ambient music",
+    "lo-fi music",
+    "acoustic guitar music",
+    "orchestral music",
+    "jazz music",
+    "pop music",
+    "electronic music",
+    "hip hop music",
+    "upbeat energetic music",
+    "melancholic sad music",
+    "romantic music",
+    "cinematic background music",
+    "nature documentary music",
+    "meditation music",
+    "folk music",
+    "rock music",
+]
+
+# Minimum score to include a music description in output
+_MUSIC_DESC_THRESHOLD = 0.15
+
 # CLAP model — uses HTS-AT as audio encoder, RoBERTa as text encoder
 _CLAP_MODEL_ID = "laion/clap-htsat-unfused"
 
@@ -114,6 +140,7 @@ class AudioProcessor(BasePerceptionModule):
         self._clap_model = None
         self._clap_processor = None
         self._text_embeddings: Optional[torch.Tensor] = None  # precomputed
+        self._music_text_embeddings: Optional[torch.Tensor] = None  # music descriptions
 
     # ── Model lifecycle ───────────────────────────────────────────────────────
 
@@ -156,6 +183,7 @@ class AudioProcessor(BasePerceptionModule):
 
             # Precompute text embeddings for all categories (do this once)
             self._text_embeddings = self._compute_text_embeddings()
+            self._music_text_embeddings = self._compute_music_text_embeddings()
             print(f"✓ CLAP / HTS-AT loaded on {self.device} "
                   f"({len(_HTSAT_CATEGORIES)} sound categories)")
         except Exception as e:
@@ -193,6 +221,7 @@ class AudioProcessor(BasePerceptionModule):
             del self._clap_processor
             self._clap_processor = None
         self._text_embeddings = None
+        self._music_text_embeddings = None
         self.model = None
         if self.device == "cuda":
             import gc
@@ -263,11 +292,19 @@ class AudioProcessor(BasePerceptionModule):
             transcription, speech_confidence, audio_events
         )
 
+        # Run music description only when music is actually detected
+        music_detected = any(
+            e["event"] in _MUSIC_LABELS and e["confidence"] > _HTSAT_THRESHOLD
+            for e in audio_events
+        )
+        music_description = self._describe_music(waveform) if music_detected else []
+
         return {
             "transcription": transcription,
             "speech_confidence": round(speech_confidence, 4),
             "has_speech": has_speech,
             "audio_events": audio_events,
+            "music_description": music_description,
             "dominant_type": dominant_type,
         }
 
@@ -354,6 +391,70 @@ class AudioProcessor(BasePerceptionModule):
             return events[:5]  # top-5
         except Exception as e:
             print(f"⚠  HTS-AT error: {e}")
+            return []
+
+    # ── Music description ────────────────────────────────────────────────────
+
+    def _compute_music_text_embeddings(self) -> Optional[torch.Tensor]:
+        """Precompute and normalise text embeddings for music description labels."""
+        if self._clap_model is None or self._clap_processor is None:
+            return None
+        try:
+            text_inputs = self._clap_processor(
+                text=_MUSIC_DESCRIPTION_LABELS,
+                return_tensors="pt",
+                padding=True,
+            )
+            text_inputs = {k: v.to(self.device) for k, v in text_inputs.items()}
+            with torch.no_grad():
+                embeds = self._clap_model.get_text_features(**text_inputs)
+            return torch.nn.functional.normalize(embeds, p=2, dim=-1)
+        except Exception as e:
+            print(f"⚠  Music text embedding precomputation failed: {e}")
+            return None
+
+    def _describe_music(self, waveform_16k: np.ndarray) -> List[Dict]:
+        """
+        Run zero-shot music description against _MUSIC_DESCRIPTION_LABELS.
+        Returns top matches as [{"description": str, "confidence": float}].
+        Only called when music has already been detected by HTS-AT.
+        """
+        if self._clap_model is None or self._music_text_embeddings is None:
+            return []
+        try:
+            import torchaudio
+            wav_tensor = torch.from_numpy(waveform_16k).unsqueeze(0)
+            waveform_48k = torchaudio.functional.resample(
+                wav_tensor, _WHISPER_SAMPLE_RATE, _CLAP_SAMPLE_RATE
+            ).squeeze(0).numpy()
+
+            audio_inputs = self._clap_processor(
+                audios=waveform_48k,
+                sampling_rate=_CLAP_SAMPLE_RATE,
+                return_tensors="pt",
+            )
+            model_dtype = next(self._clap_model.parameters()).dtype
+            audio_inputs = {
+                k: v.to(self.device, dtype=model_dtype) if v.is_floating_point() else v.to(self.device)
+                for k, v in audio_inputs.items()
+            }
+
+            with torch.no_grad():
+                audio_embeds = self._clap_model.get_audio_features(**audio_inputs)
+            audio_embeds = torch.nn.functional.normalize(audio_embeds, p=2, dim=-1)
+
+            sims = (audio_embeds @ self._music_text_embeddings.T).squeeze(0)
+            sims = sims.float().cpu().tolist()
+
+            descriptions = [
+                {"description": label, "confidence": round(score, 4)}
+                for label, score in zip(_MUSIC_DESCRIPTION_LABELS, sims)
+                if score >= _MUSIC_DESC_THRESHOLD
+            ]
+            descriptions.sort(key=lambda x: x["confidence"], reverse=True)
+            return descriptions[:3]  # top-3 descriptions
+        except Exception as e:
+            print(f"⚠  Music description error: {e}")
             return []
 
     # ── Per-frame fusion ──────────────────────────────────────────────────────

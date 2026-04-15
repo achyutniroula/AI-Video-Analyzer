@@ -132,6 +132,8 @@ class MusicIdentifier:
             audio_path,
             maxlength=self.max_secs,
         )
+        if isinstance(fp, bytes):
+            fp = fp.decode("utf-8")
         return duration, fp
 
     # ── AcoustID lookup ───────────────────────────────────────────────────────
