@@ -34,7 +34,7 @@ The worker runs a sequential perception stack, fuses results, and generates a na
 - Chromaprint + AcoustID — music fingerprinting
 
 **Fusion**
-- Weighted Boxes Fusion (WBF) ensemble across all detection models
+- Siloed detections from all the models
 - Scene graph generation from spatial bounding box relationships
 - Unified scene representation combining all modalities
 
