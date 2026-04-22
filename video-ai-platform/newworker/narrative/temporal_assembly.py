@@ -225,6 +225,7 @@ class TemporalAssembly:
         speech_confidences: list = []
         event_counts: Dict[str, float] = {}
         dominant_votes: Dict[str, int] = {}
+        music_desc_counts: Dict[str, float] = {}
 
         for r in results:
             audio = r.usr.audio
@@ -248,11 +249,19 @@ class TemporalAssembly:
                 if name:
                     event_counts[name] = max(event_counts.get(name, 0.0), conf)
 
+            # Music descriptions — keep peak confidence per label
+            for desc in audio.get("music_description", []):
+                name = desc.get("description", "")
+                conf = desc.get("confidence", 0.0)
+                if name:
+                    music_desc_counts[name] = max(music_desc_counts.get(name, 0.0), conf)
+
             # Dominant-type vote
             dt = audio.get("dominant_type", "silent")
             dominant_votes[dt] = dominant_votes.get(dt, 0) + 1
 
         top_events = sorted(event_counts.items(), key=lambda x: -x[1])[:5]
+        top_music_descs = sorted(music_desc_counts.items(), key=lambda x: -x[1])[:3]
         avg_speech_conf = (
             round(sum(speech_confidences) / len(speech_confidences), 4)
             if speech_confidences else 0.0
@@ -263,6 +272,9 @@ class TemporalAssembly:
             "events": [{"event": e, "confidence": round(c, 3)} for e, c in top_events],
             "avg_speech_confidence": avg_speech_conf,
             "dominant_votes": dominant_votes,
+            "music_descriptions": [
+                {"description": d, "confidence": round(c, 3)} for d, c in top_music_descs
+            ],
         }
 
     # ─────────────────────────────────────────────────────────────────
@@ -306,6 +318,13 @@ class TemporalAssembly:
                 for e in audio["events"]
             )
             lines.append(f"AUDIO EVENTS (HTS-AT): {ev_str}")
+
+        if audio.get("music_descriptions"):
+            desc_str = ", ".join(
+                f"{d['description']} ({d['confidence']*100:.0f}%)"
+                for d in audio["music_descriptions"]
+            )
+            lines.append(f"MUSIC DESCRIPTION (CLAP): {desc_str}")
 
         if self.music_identification and self.music_identification.get("best_match"):
             m = self.music_identification["best_match"]

@@ -18,6 +18,7 @@ Dry-run (no GPU / no model weights required):
 
 from __future__ import annotations
 
+import gc
 import os
 import time
 import traceback
@@ -81,20 +82,26 @@ class VideoPipeline:
         sample_fps: float = 1.0,
         skip_audio: bool = False,
         dry_run: bool = False,
+        disabled_modules: frozenset = frozenset(),
     ):
         self.device = device
         self.quantize_bits = quantize_bits
         self.sample_fps = sample_fps
-        self.skip_audio = skip_audio
+        # "audio" or "fusion" in disabled_modules implies skip_audio
+        self.skip_audio = skip_audio or bool(
+            disabled_modules & {"audio", "fusion"}
+        )
         self.dry_run = dry_run
+        self.disabled_modules = disabled_modules
 
         self.video_processor = VideoProcessor(sample_fps=sample_fps)
 
         self.frame_pipeline = FramePipeline(
             device=device,
             quantize_bits=quantize_bits,
-            skip_audio=skip_audio,
+            skip_audio=self.skip_audio,
             dry_run=dry_run,
+            disabled_modules=disabled_modules,
         )
 
         if dry_run:
@@ -106,7 +113,7 @@ class VideoPipeline:
     #  Main entry point
     # ─────────────────────────────────────────────────────────────────
 
-    def process(self, video_path: str, video_id: Optional[str] = None) -> VideoResult:
+    def process(self, video_path: str, video_id: Optional[str] = None, disabled_modules=None) -> VideoResult:
         """
         Process a full video file end-to-end.
 
@@ -120,6 +127,19 @@ class VideoPipeline:
         if video_id is None:
             video_id = os.path.splitext(os.path.basename(video_path))[0]
 
+        # Per-call override of disabled_modules (e.g. set from SQS message)
+        if disabled_modules is not None:
+            dm = frozenset(m.strip().lower() for m in disabled_modules if m.strip()) if not isinstance(disabled_modules, frozenset) else disabled_modules
+            self.frame_pipeline.disabled_modules = dm
+            self.frame_pipeline.skip_audio = self.skip_audio or bool(dm & {"audio", "fusion"})
+        else:
+            self.frame_pipeline.disabled_modules = self.disabled_modules
+            self.frame_pipeline.skip_audio = self.skip_audio
+
+        effective_dm = self.frame_pipeline.disabled_modules
+        if effective_dm:
+            print(f"Ablation : disabled modules → {', '.join(sorted(effective_dm))}")
+
         t_start = time.time()
 
         # ── 1. Video info ─────────────────────────────────────────────
@@ -130,15 +150,14 @@ class VideoPipeline:
         print(f"Duration: {duration:.1f}s  |  {info['fps']:.2f} fps  |  "
               f"{info['width']}x{info['height']}")
 
-        # ── 2. Frame extraction ───────────────────────────────────────
+        # ── 2. Extract frames ─────────────────────────────────────────
         print("Extracting frames...")
-        frames: List[FrameData] = self.video_processor.extract_frames(video_path)
-        n_frames = len(frames)
-        print(f"Extracted {n_frames} frames (sample_fps={self.sample_fps})")
+        all_frames = self.video_processor.extract_frames(video_path)
+        print(f"Extracted {len(all_frames)} frames (sample_fps={self.sample_fps})")
 
         # ── 3. Audio extraction ───────────────────────────────────────
         audio = None
-        if not self.skip_audio:
+        if not self.frame_pipeline.skip_audio:
             print("Extracting audio...")
             audio = self.video_processor.extract_audio(video_path)
             if audio is not None:
@@ -154,17 +173,17 @@ class VideoPipeline:
         clip_buffer: Deque[torch.Tensor] = deque(maxlen=self.CLIP_BUFFER_SIZE)
 
         with self.frame_pipeline:
-            for i, fd in enumerate(frames):
-                print(f"Processing frame {i + 1}/{n_frames} (t={fd.timestamp:.1f}s)...",
+            for fd in all_frames:
+                i = fd.frame_id
+                print(f"Processing frame {i + 1} (t={fd.timestamp:.1f}s)...",
                       flush=True)
 
-                # Update clip buffer
                 clip_buffer.append(fd.frame)
-                clip = list(clip_buffer)  # list of (H, W, 3) tensors
+                clip = list(clip_buffer)
 
                 # Slice 1 s audio segment at this frame's timestamp
                 audio_segment = None
-                if audio is not None and not self.skip_audio:
+                if audio is not None and not self.frame_pipeline.skip_audio:
                     audio_segment = self.video_processor.get_audio_segment(
                         audio,
                         timestamp=fd.timestamp,
@@ -172,23 +191,33 @@ class VideoPipeline:
                         sr=self.video_processor.audio_sample_rate,
                     )
 
+                frame_tensor = fd.frame
+                frame_id     = fd.frame_id
+                timestamp    = fd.timestamp
+
                 try:
                     result = self.frame_pipeline.process_frame(
-                        frame=fd.frame,
-                        frame_id=fd.frame_id,
-                        timestamp=fd.timestamp,
+                        frame=frame_tensor,
+                        frame_id=frame_id,
+                        timestamp=timestamp,
                         audio=audio_segment,
                         clip=clip,
                     )
                     frame_results.append(result)
                 except Exception as exc:
                     warnings.warn(
-                        f"Frame {fd.frame_id} (t={fd.timestamp:.1f}s) failed: {exc}",
+                        f"Frame {frame_id} (t={timestamp:.1f}s) failed: {exc}",
                         RuntimeWarning,
                         stacklevel=2,
                     )
                     traceback.print_exc()
                     continue  # skip this frame, keep going
+                finally:
+                    # Explicit cleanup after every frame so RAM is freed promptly
+                    del frame_tensor, audio_segment, clip
+                    gc.collect()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
 
         if not frame_results:
             raise RuntimeError("All frames failed to process; cannot produce VideoResult.")
@@ -203,6 +232,8 @@ class VideoPipeline:
 
         # ── 7. Diagnostics ────────────────────────────────────────────
         total_time = time.time() - t_start
+
+        n_frames = len(frame_results)
 
         # Peak VRAM = max across all frames
         vram_values = [fr.peak_vram_gb for fr in frame_results if fr.peak_vram_gb is not None]

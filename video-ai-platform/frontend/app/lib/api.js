@@ -58,16 +58,16 @@ export async function getPresignedUploadUrl(filename, contentType) {
 /**
  * Confirm video upload completion
  */
-export async function confirmUpload(fileKey) {
+export async function confirmUpload(fileKey, disabledModules = []) {
   const token = await getAuthToken();
-  
+
   const response = await fetch(`${API_BASE_URL}/upload/confirm`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ file_key: fileKey }),
+    body: JSON.stringify({ file_key: fileKey, disabled_modules: disabledModules }),
   });
 
   if (!response.ok) {
@@ -165,6 +165,20 @@ export async function deleteVideo(videoId) {
     throw new Error(`Failed to delete video: ${response.status}`);
   }
 
+  return response.json();
+}
+
+/**
+ * Move a video to a folder (null = move to root)
+ */
+export async function moveVideoToFolder(videoId, folderPath) {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/videos/${videoId}/folder`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folder_path: folderPath ?? null }),
+  });
+  if (!response.ok) throw new Error(`Move failed: ${response.status}`);
   return response.json();
 }
 

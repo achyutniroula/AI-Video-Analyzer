@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 import warnings
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Generator, List, Optional
 
 import cv2
 import numpy as np
@@ -90,6 +90,45 @@ class VideoProcessor:
 
         cap.release()
         return frames
+
+    def iter_frames(self, video_path: str) -> Generator[FrameData, None, None]:
+        """
+        Memory-efficient generator that yields one FrameData at a time.
+        Only one frame tensor is live in RAM at any point — use this in the
+        main pipeline instead of extract_frames() to avoid OOM on large videos.
+        """
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            raise IOError(f"Cannot open video: {video_path}")
+
+        source_fps = cap.get(cv2.CAP_PROP_FPS)
+        if source_fps <= 0:
+            source_fps = 25.0
+
+        step = max(1, int(round(source_fps / self.sample_fps)))
+        frame_count = 0
+        source_frame_idx = 0
+
+        try:
+            while True:
+                ret, bgr = cap.read()
+                if not ret:
+                    break
+                if source_frame_idx % step == 0:
+                    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+                    tensor = torch.from_numpy(rgb.copy())
+                    timestamp = source_frame_idx / source_fps
+                    yield FrameData(
+                        frame_id=frame_count,
+                        timestamp=round(timestamp, 4),
+                        frame=tensor,
+                    )
+                    frame_count += 1
+                    if frame_count >= self.MAX_FRAMES:
+                        break
+                source_frame_idx += 1
+        finally:
+            cap.release()
 
     # ─────────────────────────────────────────────────────────────────
     #  Audio extraction

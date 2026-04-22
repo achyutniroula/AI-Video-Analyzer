@@ -79,79 +79,130 @@ export default function Dashboard() {
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
               {/* Thumbnail */}
-              <div style={{ height: 148, overflow: 'hidden', borderRadius: '10px 10px 0 0', position: 'relative', background: '#0e0e0f' }}>
+              <div style={{ height: 200, overflow: 'hidden', borderRadius: '10px 10px 0 0', position: 'relative', background: '#0e0e0f' }}>
                 {i === 0 && (
-                  <svg width="100%" height="100%" viewBox="0 0 280 148" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
                     <defs>
-                      <linearGradient id="uploadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style={{stopColor:'#1a1a1c',stopOpacity:1}} />
-                        <stop offset="100%" style={{stopColor:'#2a2a2e',stopOpacity:1}} />
+                      <linearGradient id="uploadBg" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#141416" />
+                        <stop offset="100%" stopColor="#1e1e22" />
+                      </linearGradient>
+                      <linearGradient id="uploadAccent" x1="0%" y1="100%" x2="0%" y2="0%">
+                        <stop offset="0%" stopColor="#c6c6c8" stopOpacity="0" />
+                        <stop offset="100%" stopColor="#c6c6c8" stopOpacity="0.12" />
                       </linearGradient>
                     </defs>
-                    <rect width="280" height="148" fill="url(#uploadGrad)"/>
-                    <g transform="translate(140,74)">
-                      <circle cx="0" cy="0" r="25" fill="none" stroke="#c6c6c8" strokeWidth="1" opacity="0.3"/>
-                      <path d="M -15 -10 L 0 5 L 15 -10" stroke="#c6c6c8" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="2s" repeatCount="indefinite"/>
-                      </path>
-                      <rect x="-8" y="8" width="16" height="2" fill="#767578" rx="1"/>
-                      <rect x="-8" y="12" width="12" height="2" fill="#767578" rx="1"/>
-                      <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
+                    <rect width="400" height="200" fill="url(#uploadBg)"/>
+                    {/* dot grid */}
+                    {[0,1,2,3,4,5,6,7,8,9].map(col => [0,1,2,3,4].map(row => (
+                      <circle key={`${col}-${row}`} cx={col*44+22} cy={row*44+22} r="1.2" fill="#c6c6c8" opacity="0.07"/>
+                    )))}
+                    {/* rising particles */}
+                    {[80,160,240,320].map((x, idx) => (
+                      <circle key={idx} cx={x} cy="160" r="2.5" fill="#c6c6c8" opacity="0.25">
+                        <animate attributeName="cy" values="170;30;170" dur={`${2.4+idx*0.5}s`} repeatCount="indefinite" begin={`${idx*0.6}s`}/>
+                        <animate attributeName="opacity" values="0;0.35;0" dur={`${2.4+idx*0.5}s`} repeatCount="indefinite" begin={`${idx*0.6}s`}/>
+                      </circle>
+                    ))}
+                    {/* drop zone box */}
+                    <rect x="120" y="48" width="160" height="104" rx="10" fill="url(#uploadAccent)" stroke="#c6c6c8" strokeWidth="1" strokeDasharray="6,4" opacity="0.5"/>
+                    {/* upload arrow */}
+                    <g transform="translate(200,95)">
+                      <line x1="0" y1="22" x2="0" y2="-10" stroke="#c6c6c8" strokeWidth="2.5" strokeLinecap="round">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-8;0,0" dur="1.8s" repeatCount="indefinite"/>
+                      </line>
+                      <polyline points="-12,4 0,-12 12,4" fill="none" stroke="#c6c6c8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <animateTransform attributeName="transform" type="translate" values="0,0;0,-8;0,0" dur="1.8s" repeatCount="indefinite"/>
+                      </polyline>
                     </g>
+                    {/* progress bar */}
+                    <rect x="140" y="132" width="120" height="3" rx="1.5" fill="#2a2a2e"/>
+                    <rect x="140" y="132" width="120" height="3" rx="1.5" fill="#c6c6c8" opacity="0.5">
+                      <animate attributeName="width" values="0;120;0" dur="2.8s" repeatCount="indefinite"/>
+                    </rect>
                   </svg>
                 )}
                 {i === 1 && (
-                  <svg width="100%" height="100%" viewBox="0 0 280 148" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
                     <defs>
-                      <linearGradient id="videoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style={{stopColor:'#1a1a1c',stopOpacity:1}} />
-                        <stop offset="100%" style={{stopColor:'#2a2a2e',stopOpacity:1}} />
+                      <linearGradient id="videoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#141416" />
+                        <stop offset="100%" stopColor="#1e1e22" />
                       </linearGradient>
                     </defs>
-                    <rect width="280" height="148" fill="url(#videoGrad)"/>
-                    <g transform="translate(140,74)">
-                      <rect x="-20" y="-15" width="40" height="30" fill="none" stroke="#c6c6c8" strokeWidth="1" rx="2"/>
-                      <polygon points="-10,-8 0,0 -10,8" fill="#c6c6c8">
-                        <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
-                      </polygon>
-                      <line x1="-5" y1="10" x2="15" y2="10" stroke="#767578" strokeWidth="2" strokeLinecap="round">
-                        <animate attributeName="stroke-dasharray" values="0,20;20,0" dur="1.5s" repeatCount="indefinite"/>
-                      </line>
-                      <circle cx="8" cy="-5" r="1" fill="#c6c6c8" opacity="0.8">
-                        <animate attributeName="cy" values="-5;-3;-5" dur="2s" repeatCount="indefinite"/>
-                      </circle>
-                      <circle cx="12" cy="-5" r="1" fill="#c6c6c8" opacity="0.6">
-                        <animate attributeName="cy" values="-5;-4;-5" dur="2.5s" repeatCount="indefinite"/>
-                      </circle>
-                    </g>
+                    <rect width="400" height="200" fill="url(#videoBg)"/>
+                    {/* stacked thumbnail cards */}
+                    <rect x="52" y="62" width="130" height="82" rx="6" fill="#252528" stroke="#c6c6c8" strokeWidth="0.5" opacity="0.35" transform="rotate(-4,117,103)"/>
+                    <rect x="58" y="58" width="130" height="82" rx="6" fill="#2a2a2e" stroke="#c6c6c8" strokeWidth="0.5" opacity="0.6" transform="rotate(-1.5,123,99)"/>
+                    {/* main screen */}
+                    <rect x="66" y="52" width="130" height="82" rx="6" fill="#1c1c1f" stroke="#c6c6c8" strokeWidth="1" opacity="0.9"/>
+                    {/* scanline pulse */}
+                    <rect x="66" y="52" width="130" height="4" rx="2" fill="#c6c6c8" opacity="0.06">
+                      <animate attributeName="y" values="52;130;52" dur="3s" repeatCount="indefinite"/>
+                    </rect>
+                    {/* play button */}
+                    <circle cx="131" cy="93" r="20" fill="none" stroke="#c6c6c8" strokeWidth="1" opacity="0.4"/>
+                    <polygon points="124,83 124,103 148,93" fill="#c6c6c8" opacity="0.75">
+                      <animate attributeName="opacity" values="0.75;0.35;0.75" dur="2s" repeatCount="indefinite"/>
+                    </polygon>
+                    {/* film strip right side */}
+                    <rect x="220" y="52" width="110" height="82" rx="4" fill="#1a1a1c" stroke="#c6c6c8" strokeWidth="0.5" opacity="0.5"/>
+                    {[0,1,2,3].map(n => (
+                      <rect key={n} x="228" y={60+n*19} width="94" height="14" rx="2" fill="#252528" stroke="#c6c6c8" strokeWidth="0.3" opacity="0.7">
+                        <animate attributeName="opacity" values="0.7;0.4;0.7" dur={`${1.5+n*0.3}s`} repeatCount="indefinite" begin={`${n*0.2}s`}/>
+                      </rect>
+                    ))}
+                    {/* bottom metadata bars */}
+                    <rect x="66" y="148" width="80" height="3" rx="1.5" fill="#c6c6c8" opacity="0.2"/>
+                    <rect x="66" y="155" width="55" height="3" rx="1.5" fill="#c6c6c8" opacity="0.12"/>
+                    <rect x="220" y="148" width="60" height="3" rx="1.5" fill="#c6c6c8" opacity="0.2"/>
+                    <rect x="220" y="155" width="40" height="3" rx="1.5" fill="#c6c6c8" opacity="0.12"/>
                   </svg>
                 )}
                 {i === 2 && (
-                  <svg width="100%" height="100%" viewBox="0 0 280 148" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
                     <defs>
-                      <linearGradient id="logsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style={{stopColor:'#1a1a1c',stopOpacity:1}} />
-                        <stop offset="100%" style={{stopColor:'#2a2a2e',stopOpacity:1}} />
+                      <linearGradient id="logsBg" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#141416" />
+                        <stop offset="100%" stopColor="#161618" />
                       </linearGradient>
                     </defs>
-                    <rect width="280" height="148" fill="url(#logsGrad)"/>
-                    <g transform="translate(140,74)">
-                      <rect x="-25" y="-20" width="50" height="40" fill="none" stroke="#c6c6c8" strokeWidth="1" rx="2"/>
-                      <line x1="-20" y1="-10" x2="20" y2="-10" stroke="#767578" strokeWidth="1"/>
-                      <line x1="-20" y1="-5" x2="15" y2="-5" stroke="#767578" strokeWidth="1"/>
-                      <line x1="-20" y1="0" x2="10" y2="0" stroke="#767578" strokeWidth="1"/>
-                      <line x1="-20" y1="5" x2="18" y2="5" stroke="#767578" strokeWidth="1"/>
-                      <line x1="-20" y1="10" x2="12" y2="10" stroke="#767578" strokeWidth="1"/>
-                      <line x1="-20" y1="15" x2="16" y2="15" stroke="#767578" strokeWidth="1">
-                        <animate attributeName="x2" values="16;20;16" dur="1s" repeatCount="indefinite"/>
-                      </line>
-                      <circle cx="22" cy="-12" r="2" fill="#c6c6c8" opacity="0.7">
-                        <animate attributeName="cy" values="-12;-10;-12" dur="1.5s" repeatCount="indefinite"/>
-                      </circle>
-                      <circle cx="25" cy="2" r="2" fill="#c6c6c8" opacity="0.5">
-                        <animate attributeName="cy" values="2;4;2" dur="2s" repeatCount="indefinite"/>
-                      </circle>
-                    </g>
+                    <rect width="400" height="200" fill="url(#logsBg)"/>
+                    {/* terminal window chrome */}
+                    <rect x="30" y="28" width="340" height="148" rx="8" fill="#0e0e10" stroke="#2e2e32" strokeWidth="1"/>
+                    {/* title bar */}
+                    <rect x="30" y="28" width="340" height="26" rx="8" fill="#1a1a1c"/>
+                    <rect x="30" y="44" width="340" height="10" fill="#1a1a1c"/>
+                    <circle cx="52" cy="41" r="4.5" fill="#ff5f57" opacity="0.7"/>
+                    <circle cx="68" cy="41" r="4.5" fill="#febc2e" opacity="0.7"/>
+                    <circle cx="84" cy="41" r="4.5" fill="#28c840" opacity="0.7"/>
+                    <rect x="140" y="37" width="120" height="8" rx="4" fill="#2a2a2e" opacity="0.6"/>
+                    {/* log rows */}
+                    {[
+                      {y:72,  dotColor:'#28c840', w1:28, w2:90,  w3:60},
+                      {y:90,  dotColor:'#28c840', w1:28, w2:110, w3:45},
+                      {y:108, dotColor:'#febc2e', w1:28, w2:75,  w3:80},
+                      {y:126, dotColor:'#28c840', w1:28, w2:100, w3:55},
+                      {y:144, dotColor:'#28c840', w1:28, w2:85,  w3:70},
+                    ].map((row, idx) => (
+                      <g key={idx}>
+                        <circle cx="50" cy={row.y+4} r="3.5" fill={row.dotColor} opacity="0.8"/>
+                        <rect x="62" y={row.y} width={row.w1} height="6" rx="2" fill="#c6c6c8" opacity="0.18"/>
+                        <rect x={62+row.w1+8} y={row.y} width={row.w2} height="6" rx="2" fill="#c6c6c8" opacity="0.28"/>
+                        <rect x={62+row.w1+8+row.w2+8} y={row.y} width={row.w3} height="6" rx="2" fill="#c6c6c8" opacity="0.14"/>
+                      </g>
+                    ))}
+                    {/* active / typing row */}
+                    <circle cx="50" cy="166" r="3.5" fill="#c6c6c8" opacity="0.4"/>
+                    <rect x="62" y="162" width="28" height="6" rx="2" fill="#c6c6c8" opacity="0.18"/>
+                    <rect x="98" y="162" height="6" rx="2" fill="#c6c6c8" opacity="0.5">
+                      <animate attributeName="width" values="0;120;0" dur="2.2s" repeatCount="indefinite"/>
+                    </rect>
+                    {/* blinking cursor */}
+                    <rect x="98" y="162" width="6" height="6" rx="1" fill="#c6c6c8" opacity="0.8">
+                      <animate attributeName="x" values="98;218;98" dur="2.2s" repeatCount="indefinite"/>
+                      <animate attributeName="opacity" values="0.8;0.8;0" dur="0.6s" repeatCount="indefinite"/>
+                    </rect>
                   </svg>
                 )}
                 {/* Gradient overlay */}

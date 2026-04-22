@@ -1,0 +1,174 @@
+{
+  "videos": [
+    {
+      "video_id": "74632724-06e2-484c-b69c-bc6f8fa0ecd5",
+      "title": "People ordering food in subway",
+      "category": "indoor",
+      "source": "Youtube",
+      "duration_seconds": 30,
+      "ground_truth": "There appears a car stopping at a drive thru where two people start ordering some food. There comes voice from the mic asking about their order and then the woman orders the same thing the other did but just changing one item with a thigh. Then there appears sandwich with lots of different vegetables and meat and coldrinks on the side. Its a commercial from SUBWAY which says eat fresh."
+    },
+    {
+      "video_id": "dfc1a49e-a6bb-49a0-867a-cc85e80b86f7",
+      "title": "Restaurant interior",
+      "category": "indoor",
+      "source": "Youtube",
+      "duration_seconds": 30,
+      "ground_truth": "There is bar counter with lots of alcohol bottles and a tree picture beside it. It appears to be restaurant interior with lots of tables and red colored chairs. There is a yello lighting all over the dining area and music band with music equipments. There is a music playing in a background and then the name of the restaurant appears as VERSE - LOS ANGELES."
+    },
+    {
+      "video_id": "4f8366dc-7ab3-4881-8782-55bcacac4b30",
+      "title": "People cooking in a restaurent kitchen",
+      "category": "indoor",
+      "source": "Youtube",
+      "duration_seconds": 29,
+      "ground_truth": "There are lots of people in a kitchen restaurant prepping food. One person entering with a box of green peppers. People are cooking with different ingrediets like onions, green peppers, cheese, avocade and chicken. They are cutting, chopping, prepping vegetables and mixing with meat and souces. They are preparing a bowl of salad. In last frame, the name of the restaurant appear which Chipotle - the mexican grill."
+    },
+    {
+      "video_id": "7d00570c-4d81-46b9-b67a-6ecbb8f46c71",
+      "title": "A girl is roaming in streets",
+      "category": "music",
+      "source": "Youtube",
+      "duration_seconds": 30,
+      "ground_truth": "A girl is roaming around in streets. She is enjoying and meets another girl. The streets are wet, which means it recently rained in that area. The background music is also there and the vocals of singer singing in english."
+    },
+    {
+      "video_id": "368df7fe-5323-4688-8b95-fdee5f0506f8",
+      "title": "Dancing girls",
+      "category": "music",
+      "source": "Youtube",
+      "duration_seconds": 16,
+      "ground_truth": "One girls starts the video. She then joins the group of girls dancing on a song. There are total 6 girls dancing with a tree in their background in nighttime. There is background song playing."
+    },
+    {
+      "video_id": "2c8ead08-41de-4a15-86d2-ffee92402139",
+      "title": "Song playing in a static frame",
+      "category": "music",
+      "source": "Pexels",
+      "duration_seconds": 28,
+      "ground_truth": "There is girl standing with a umbrella in front of river. There are many buildings on the other side of the river. This is just a image, with a background song playing. The lyrics of the song appear in the video in the sync of the song played in background."
+    },
+    {
+      "video_id": "f5e9b920-5dac-4b5b-bee0-59e5ba832b0a",
+      "title": "People with a dog in outdoor",
+      "category": "nature",
+      "source": "Pexels",
+      "duration_seconds": 23,
+      "ground_truth": "There is a women standing on a rock with a young girl. There is also a dog with them who is wiggling his tail. They are in a natural place with some trees and mountains in the background."
+    },
+    {
+      "video_id": "817563cd-16e9-4215-b953-4b0bb07270f3",
+      "title": "Videos of mountains and sky",
+      "category": "nature",
+      "source": "Pexels",
+      "duration_seconds": 34,
+      "ground_truth": "The video starts with a huge green mountain sorrounded by fog and white clouds. There are many mountains. There is a blue orange sky with a bright sun and moving clouds. Again, there are many mountains which looks deep and around there are clouds. There is a background music playing. "
+    },
+    {
+      "video_id": "56ced09a-425a-4a1a-9ee7-2a62634ee024",
+      "title": "Forest video",
+      "category": "nature",
+      "source": "Pexels",
+      "duration_seconds": 33,
+      "ground_truth": "The video starts with a small water flow in which there are stones and pebbles and trees around it. There is one ant running on the leaf and there is an insect sitting on a leaf. Thers also a bright sun in the forest sorrounded by lots of trees in a daytime. There is a big river flowing rapidly in between the trees."
+    },
+    {
+      "video_id": "183a8fc0-fc44-4c78-85eb-b46eb7e7db50",
+      "title": "F1 racing",
+      "category": "sports",
+      "source": "Youtube",
+      "duration_seconds": 50,
+      "ground_truth": "There is a person sitting weating a helpmet in a car. There are two f1 cars on racing track and one them crases into other. There appears a starting red lights for the race. There are many f1 cars racing on the race track with leaderboad on the side. There are lots of people in the stadium and sparkles coming out of the f1 cars. There is commentary in the background with a background music."
+    },
+    {
+      "video_id": "a9e2f674-303a-4187-b2ba-090c73e3a37f",
+      "title": "People playing soccer",
+      "category": "sports",
+      "source": "Youtube",
+      "duration_seconds": 32,
+      "ground_truth": "There are two teams playing soccer in a field. One team is in white jersey and other in blue jersey. They are competing each other. They are chasing and snatching the ball with each other. The white team players are shooting the ball in the net. The goalkeeper is trying to save the goal."
+    },
+    {
+      "video_id": "421d5a85-12eb-42cc-afa4-49e3b53cc79c",
+      "title": "Professional basketball match",
+      "category": "sports",
+      "source": "Youtube",
+      "duration_seconds": 40,
+      "ground_truth": "There is a team strategizing for the match. Then there comes a man giving high-fives to the audience members and its written the Black History on his t-shirt. All the palyers are playing profession basketball game in front of big spectators. They are two teams one playing with white jerseys called kings and one with balck jerseys called los angeles. There is high instense background music playing with the intense match goinf on."
+    },
+    {
+      "video_id": "1e6d2e0f-d88f-4277-a6f8-2ebd5eea3814",
+      "title": "Two persons having a conversation",
+      "category": "animated",
+      "source": "Youtube",
+      "duration_seconds": 23,
+      "ground_truth": "It is an animated video. the girl asking for her cap from the boy. Then she snatches the sucker from the boys mouth and puts in her mouth. In the meantime, the takes her cap again. They are in front of a covenience store which shows its still open. Theres also a background music playing. "
+    },
+    {
+      "video_id": "a3694efc-3e3a-4958-9b2f-6d549eeaf606",
+      "title": "Girl going for walk in rain",
+      "category": "animated",
+      "source": "Youtube",
+      "duration_seconds": 28,
+      "ground_truth": "The girl is working on her pink laptop on her bed. There is rain outside her windows. There is a teddy bear on her bed. Then she wears hers yellow raincoat and exits her apartments with a sweet music playing in the background."
+    },
+    {
+      "video_id": "139ce2c3-7fb3-4628-80f8-7c56687bdbee",
+      "title": "Sad girl and a boy",
+      "category": "animated",
+      "source": "Youtube",
+      "duration_seconds": 30,
+      "ground_truth": "The video starts with title called xaramel studios presents. The girl is walking alone with a cloud on her above. The girl looks sad. Then there comes a boy who waves at her to talk. Then they both talk and they became happy showing love for each other. There is also violin style music plaing in the background. "
+    },
+    {
+      "video_id": "bb4dbe65-709b-449a-8c3e-ab77c86597a5",
+      "title": "Pedestrians walking",
+      "category": "city",
+      "source": "Pexels",
+      "duration_seconds": 36,
+      "ground_truth": "There are many walking on the sideways on a bright day. Then there comes a sound for someone calling someone. People are walking together and chatting with each other. There is road beside the sideways, where many cars are parked and some are driving on the road as usual. There are many cars with different colors like black, red and white. There are shops on the other side of teh pathway. There are sounds of people walking, talking and cars."
+    },
+    {
+      "video_id": "4836f75d-7130-4962-92f5-4f0ec9b3b3bf",
+      "title": "Urban city life with a voiceover",
+      "category": "city",
+      "source": "Youtube",
+      "duration_seconds": 30,
+      "ground_truth": "The video starts with lots of car on the bridge and lots of highrise buidings in a daytime. There are lots of people walking on sideways. One bald person in a formal suit notices a bag with many items including money, passports and wires. Then there comes a server with a coffee and see's a screen which says FIGHT FOR US and WANT TO BE A HERO? The girl is walking with her dog and notices a trash in which there is can of hydrogen peroxide. There's always a constant background voiceover explaining all these and then there comes a screen with a text which says IF IT DOESNT ADD UP, SPEAK UP and mentions a call number for national security. "
+    },
+    {
+      "video_id": "869433d9-27c0-4bca-b63e-7abe4226f9a4",
+      "title": "Portugal video",
+      "category": "city",
+      "source": "Pexels",
+      "duration_seconds": 30,
+      "ground_truth": "There are lots of beautiful multi-colored buildings on a seashore on a bright day. There is a portugal's flag waving in the wind. There is a tram and cars on the street. There is many historical buildings and food and wine on the table. There are some people on the streets and there is a big statue facing the seashore. There are many historical buildings and statues appear and also people playing and doing outdoor activities like skateboarding. Then it transitions to nighttime. "
+    },
+    {
+      "video_id": "18aac840-7e3d-4681-b918-6cf7db024dee",
+      "title": "Girl giving a elevator pitch",
+      "category": "speech",
+      "source": "Youtube",
+      "duration_seconds": 40,
+      "ground_truth": "The girl is recording a video for a pitch. She greets and introduces herself as Andrea. She mentions that she is studying marketing from university of dallas in texas.She mentions her business skills and personal skills and mentions that she is dedicated. She is hoping to work in corporate environment."
+    },
+    {
+      "video_id": "12c8953f-fec5-4275-ae28-e0758c41134a",
+      "title": "Science argument",
+      "category": "speech",
+      "source": "Youtube",
+      "duration_seconds": 30,
+      "ground_truth": "There are two people arguing over a topic of science. The person with glasses argues that he and roger bennister are scientist but not the guy in blue shirt. The argument goes on and the guy with glasses is agrressive towards the guy in blue-red shirt and curses him that he is no good and not a scientist at all. Then he tells him to get out of the room."
+    },
+    {
+      "video_id": "8950bde9-b733-4de8-84f7-a9af555d449d",
+      "title": "Motivational video",
+      "category": "speech",
+      "source": "Youtube",
+      "duration_seconds": 37,
+      "ground_truth": "The video starts with guy siiting in loneliness near a window. There is a constant voiceover in the video motivating saying that no matter what dream someone has, they have to work hard. There appears people thrrowing stuufs and sitting in sadness and loneliness. And then there is man with its equipment climbing up on trail in snowy weather with a high intense background music."
+    }
+
+  ],
+  "_instructions": "Replace REPLACE_WITH_YOUR_VIDEO_ID with the actual video IDs from your system (run fetch_narratives.py to see your video IDs). Write the ground_truth text yourself BEFORE running your system on the video, so you are not biased by the generated output. 15-20 videos across all categories is the target."
+}

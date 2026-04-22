@@ -60,6 +60,20 @@ function VideoLogCard({ video }) {
   const hasWarning = logs.some(l => l.level === 'WARNING');
   const statusColor = hasError ? '#f0847e' : hasWarning ? '#e8c77a' : '#6ee7b7';
 
+  function getProcessingTime() {
+    if (video.created_at && video.processed_at) {
+      const ms = new Date(video.processed_at) - new Date(video.created_at);
+      if (!isNaN(ms) && ms > 0) {
+        const secs = Math.round(ms / 1000);
+        return secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`;
+      }
+    }
+    const completeLog = logs.find(l => l.step === 'complete');
+    if (completeLog) { const m = completeLog.message.match(/(\d+)s/); if (m) return `${m[1]}s`; }
+    return null;
+  }
+  const processingTime = getProcessingTime();
+
   async function loadRawLog() {
     if (rawLog !== null || logLoading) return;
     setLogLoading(true);
@@ -113,6 +127,12 @@ function VideoLogCard({ video }) {
           }}>
             {video.status}
           </span>
+          {processingTime && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--outline)', fontSize: '0.65rem', fontFamily: 'monospace' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 12, fontFamily: font }}>timer</span>
+              {processingTime}
+            </span>
+          )}
           {hasRawLog ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--outline)', fontSize: '0.65rem', fontFamily: font }}>
               <span className="material-symbols-outlined" style={{ fontSize: 12 }}>terminal</span>

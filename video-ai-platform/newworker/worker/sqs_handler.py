@@ -110,11 +110,13 @@ class SQSHandler:
             if "Records" in body:
                 record = body["Records"][0]
                 s3_info = record["s3"]
+                raw_disabled = body.get("disabled_modules", [])
                 return {
                     "bucket": s3_info["bucket"]["name"],
                     "s3_key": s3_info["object"]["key"],
                     "size": s3_info["object"]["size"],
                     "event_name": record["eventName"],
+                    "disabled_modules": frozenset(m.strip().lower() for m in raw_disabled if m.strip()),
                 }
 
             return None

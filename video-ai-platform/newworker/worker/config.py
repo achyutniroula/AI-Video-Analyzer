@@ -17,5 +17,13 @@ class Settings:
     DEVICE                 = os.environ.get("DEVICE", "cuda")
     QUANTIZE_BITS          = int(os.environ.get("QUANTIZE_BITS", "8"))
 
+    _raw_disabled = os.environ.get("DISABLED_MODULES", "")
+    DISABLED_MODULES: frozenset = frozenset(
+        m.strip().lower() for m in _raw_disabled.split(",") if m.strip()
+    )
+    # Valid values: siglip, depth, panoptic, scene_graph, action, tracker,
+    #               audio, fusion, vlm
+    # "fusion" disables all perception modules + fusion (VLM-only mode).
+
 
 settings = Settings()

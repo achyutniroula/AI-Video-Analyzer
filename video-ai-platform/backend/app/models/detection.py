@@ -90,6 +90,8 @@ class VideoResponse(BaseModel):
     total_detections: Optional[int] = None
     metadata: Optional[VideoMetadata] = None
     error_message: Optional[str] = None
+    display_name: Optional[str] = None
+    folder_path: Optional[str] = None
 
 class VideoDetailResponse(VideoResponse):
     """

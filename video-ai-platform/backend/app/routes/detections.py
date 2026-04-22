@@ -3,7 +3,7 @@ Detection API Routes — list, detail, detections, rename, delete, thumbnail, lo
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from app.models.detection import VideoResponse, VideoDetailResponse, VideoListResponse
 from app.utils.cognito import get_current_user
 from app.utils.db_handler import DBHandler
@@ -24,6 +24,9 @@ s3_client = boto3.client('s3', region_name=AWS_REGION)
 
 class RenameRequest(BaseModel):
     display_name: str
+
+class FolderRequest(BaseModel):
+    folder_path: Optional[str] = None
 
 
 # ── List ──────────────────────────────────────────────────────────────────────
@@ -330,6 +333,33 @@ async def rename_video(video_id: str, body: RenameRequest, current_user: dict = 
         return {"message": "Renamed successfully", "display_name": body.display_name.strip()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
+
+
+# ── Move to folder ────────────────────────────────────────────────────────────
+
+@router.patch("/{video_id}/folder")
+async def move_video_to_folder(video_id: str, body: FolderRequest, current_user: dict = Depends(get_current_user)):
+    video = db.get_video_by_id(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    if video.get('user_id') != current_user['user_id']:
+        raise HTTPException(status_code=403, detail="Access denied")
+    try:
+        if body.folder_path and body.folder_path.strip():
+            db.table.update_item(
+                Key={'video_id': video_id},
+                UpdateExpression="SET folder_path = :fp",
+                ExpressionAttributeValues={":fp": body.folder_path.strip()},
+            )
+            return {"message": "Moved successfully", "folder_path": body.folder_path.strip()}
+        else:
+            db.table.update_item(
+                Key={'video_id': video_id},
+                UpdateExpression="REMOVE folder_path",
+            )
+            return {"message": "Moved to root", "folder_path": None}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Move failed: {str(e)}")
 
 
 # ── Delete ─────────────────────────────────────────────────────────────────────

@@ -173,6 +173,9 @@ class VideoResult:
         # Environmental sounds (HTS-AT)
         htsat_events = audio_summary.get("events", [])
 
+        # Music genre/mood description (CLAP zero-shot, per-frame aggregate)
+        music_descriptions = audio_summary.get("music_descriptions", [])
+
         # Global dominant type via majority vote + music fingerprint
         dominant_type, fusion_notes = _fuse_audio_global(
             has_speech=has_speech,
@@ -192,6 +195,8 @@ class VideoResult:
             "music_match": music_match,
             # Environmental sounds (HTS-AT)
             "audio_events": htsat_events,
+            # Music genre/mood (CLAP zero-shot per-frame aggregate)
+            "music_descriptions": music_descriptions,
             # Unified fusion
             "dominant_type": dominant_type,
             "fusion_notes": fusion_notes,

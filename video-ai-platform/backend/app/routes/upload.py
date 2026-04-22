@@ -75,7 +75,8 @@ async def confirm_upload(
                 "bucket": {"name": settings.S3_BUCKET_NAME},
                 "object": {"key": confirmation.file_key, "size": 0},
             },
-        }]
+        }],
+        "disabled_modules": confirmation.disabled_modules,
     })
     sqs.send_message(QueueUrl=settings.SQS_QUEUE_URL, MessageBody=message_body)
 

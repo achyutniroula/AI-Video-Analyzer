@@ -1,0 +1,36 @@
+{
+  "videos": [
+    {
+      "video_id": "4836f75d-7130-4962-92f5-4f0ec9b3b3bf",
+      "title": "Urban city life with a voiceover",
+      "category": "city",
+      "source": "Youtube",
+      "duration_seconds": 30,
+      "ground_truth": "The video starts with lots of car on the bridge and lots of highrise buidings in a daytime. There are lots of people walking on sideways. One bald person in a formal suit notices a bag with many items including money, passports and wires. Then there comes a server with a coffee and see's a screen which says FIGHT FOR US and WANT TO BE A HERO? The girl is walking with her dog and notices a trash in which there is can of hydrogen peroxide. There's always a constant background voiceover explaining all these and then there comes a screen with a text which says IF IT DOESNT ADD UP, SPEAK UP and mentions a call number for national security. "
+    },
+    {
+      "video_id": "55418726-0241-40cb-a954-2af17a24ca73",
+      "title": "Urban city life (No Depth)",
+      "category": "city",
+      "ground_truth": "The video starts with lots of car on the bridge and lots of highrise buidings in a daytime. There are lots of people walking on sideways. One bald person in a formal suit notices a bag with many items including money, passports and wires. Then there comes a server with a coffee and see's a screen which says FIGHT FOR US and WANT TO BE A HERO? The girl is walking with her dog and notices a trash in which there is can of hydrogen peroxide. There's always a constant background voiceover explaining all these and then there comes a screen with a text which says IF IT DOESNT ADD UP, SPEAK UP and mentions a call number for national security. "
+    },
+    {
+      "video_id": "5393290e-466a-4451-a6d3-6936b40797ae",
+      "title": "Urban city life (No Audio)",
+      "category": "city",
+      "ground_truth": "The video starts with lots of car on the bridge and lots of highrise buidings in a daytime. There are lots of people walking on sideways. One bald person in a formal suit notices a bag with many items including money, passports and wires. Then there comes a server with a coffee and see's a screen which says FIGHT FOR US and WANT TO BE A HERO? The girl is walking with her dog and notices a trash in which there is can of hydrogen peroxide. There's always a constant background voiceover explaining all these and then there comes a screen with a text which says IF IT DOESNT ADD UP, SPEAK UP and mentions a call number for national security. "
+    },
+    {
+      "video_id": "4bb648cc-56c0-46cb-bb1d-cf4ebcfcecab",
+      "title": "Urban city life (No Scene Graph)",
+      "category": "city",
+      "ground_truth": "The video starts with lots of car on the bridge and lots of highrise buidings in a daytime. There are lots of people walking on sideways. One bald person in a formal suit notices a bag with many items including money, passports and wires. Then there comes a server with a coffee and see's a screen which says FIGHT FOR US and WANT TO BE A HERO? The girl is walking with her dog and notices a trash in which there is can of hydrogen peroxide. There's always a constant background voiceover explaining all these and then there comes a screen with a text which says IF IT DOESNT ADD UP, SPEAK UP and mentions a call number for national security. "
+    },
+    {
+      "video_id": "5337693e-1961-46fc-87ee-d9190bc1731c",
+      "title": "Urban city life (VLM-only (No Fusion))",
+      "category": "city",
+      "ground_truth": "The video starts with lots of car on the bridge and lots of highrise buidings in a daytime. There are lots of people walking on sideways. One bald person in a formal suit notices a bag with many items including money, passports and wires. Then there comes a server with a coffee and see's a screen which says FIGHT FOR US and WANT TO BE A HERO? The girl is walking with her dog and notices a trash in which there is can of hydrogen peroxide. There's always a constant background voiceover explaining all these and then there comes a screen with a text which says IF IT DOESNT ADD UP, SPEAK UP and mentions a call number for national security. "
+    }
+  ]
+}

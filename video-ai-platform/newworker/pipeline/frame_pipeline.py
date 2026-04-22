@@ -102,14 +102,17 @@ class FramePipeline:
         max_vlm_tokens: int = 256,
         skip_audio: bool = False,
         dry_run: bool = False,
+        disabled_modules: frozenset = frozenset(),
         # Inject a pre-built captioner (e.g. for tests)
         captioner=None,
     ):
         self.device = device
         self.quantize_bits = quantize_bits
         self.max_vlm_tokens = max_vlm_tokens
-        self.skip_audio = skip_audio
+        # "audio" in disabled_modules implies skip_audio
+        self.skip_audio = skip_audio or "audio" in disabled_modules
         self.dry_run = dry_run
+        self.disabled_modules = disabled_modules
 
         self._fusion = MultiModalFusionEngine()
         self._captioner = captioner       # injected or created in setup()
@@ -136,15 +139,15 @@ class FramePipeline:
             torch.backends.cudnn.benchmark = True
 
         # CPU modules — instantiate and init once
+        dm = self.disabled_modules
         if not self.dry_run:
             from perception import SceneGraphGenerator, ByteTracker
-            self._scene_graph = SceneGraphGenerator()
-            self._scene_graph.load_model()
-            self._tracker = ByteTracker()
-            self._tracker.load_model()
-        else:
-            self._tracker = None
-            self._scene_graph = None
+            if "scene_graph" not in dm and "fusion" not in dm:
+                self._scene_graph = SceneGraphGenerator()
+                self._scene_graph.load_model()
+            if "tracker" not in dm and "fusion" not in dm:
+                self._tracker = ByteTracker()
+                self._tracker.load_model()
 
         # VLM — load once, keep resident
         if not self.dry_run and self._captioner is None:
@@ -232,7 +235,7 @@ class FramePipeline:
 
         # ── 4. Scene Graph (CPU) ─────────────────────────────────────
         with profiler.step("scene_graph"):
-            if self.dry_run:
+            if self.dry_run or "scene_graph" in self.disabled_modules or "fusion" in self.disabled_modules:
                 sg_out = _dummy_perception("SceneGraphGenerator", frame_id, timestamp)
             else:
                 sg_out = self._scene_graph(
@@ -247,7 +250,7 @@ class FramePipeline:
 
         # ── 6. ByteTracker (CPU) ─────────────────────────────────────
         with profiler.step("tracker"):
-            if self.dry_run:
+            if self.dry_run or "tracker" in self.disabled_modules or "fusion" in self.disabled_modules:
                 tracker_out = _dummy_perception("ByteTracker", frame_id, timestamp)
             else:
                 tracker_out = self._tracker(
@@ -264,22 +267,27 @@ class FramePipeline:
                 )
 
         # ── 8. Fusion ────────────────────────────────────────────────
+        # When "fusion" is disabled (VLM-only mode), all perception outputs are
+        # passed as None so the engine returns an empty/minimal USR.
         with profiler.step("fusion"):
-            usr = self._fusion.fuse(
-                frame_id=frame_id,
-                timestamp=timestamp,
-                siglip=siglip_out,
-                depth=depth_out,
-                panoptic=panoptic_out,
-                scene_graph=sg_out,
-                tracker=tracker_out,
-                actions=action_out,
-                audio=audio_out,
-            )
+            if "fusion" in self.disabled_modules:
+                usr = self._fusion.fuse(frame_id=frame_id, timestamp=timestamp)
+            else:
+                usr = self._fusion.fuse(
+                    frame_id=frame_id,
+                    timestamp=timestamp,
+                    siglip=siglip_out,
+                    depth=depth_out,
+                    panoptic=panoptic_out,
+                    scene_graph=sg_out,
+                    tracker=tracker_out,
+                    actions=action_out,
+                    audio=audio_out,
+                )
 
         # ── 9. Qwen2-VL caption ──────────────────────────────────────
         with profiler.step("vlm"):
-            if self.dry_run:
+            if self.dry_run or "vlm" in self.disabled_modules:
                 caption = _dummy_vlm_caption(usr, frame_id, timestamp)
             else:
                 caption = self._captioner.caption(usr, frame)
@@ -319,7 +327,15 @@ class FramePipeline:
         Always uses try/finally so unload() is called even on exception.
         In dry_run mode returns a placeholder output without touching the GPU.
         """
-        if self.dry_run:
+        _CLASS_TO_MODULE_KEY = {
+            "SigLIPEncoder":    "siglip",
+            "DepthEstimator":   "depth",
+            "PanopticSegmenter":"panoptic",
+            "ActionRecognizer": "action",
+            "AudioProcessor":   "audio",
+        }
+        module_key = _CLASS_TO_MODULE_KEY.get(class_name, class_name.lower())
+        if self.dry_run or module_key in self.disabled_modules or "fusion" in self.disabled_modules:
             return _dummy_perception(class_name, frame_id, timestamp)
 
         import perception as _perc
